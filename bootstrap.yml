@@ -1,0 +1,66 @@
+---
+- hosts: all
+  vars:
+    streams:
+      - url: "webcast.sermonaudio.com/sa"
+        key: "some-sa-key"
+      - url: "a.rtmp.youtube.com/live2"
+        key: "some-youtube-key"
+  tasks:
+    - name: "Install nginx packages"
+      apt:
+        pkg:
+          - build-essential
+          - libpcre3
+          - libpcre3-dev
+          - libssl-dev
+          - unzip
+        update_cache: yes
+        state: present
+    - name: "Download nginx"
+      get_url:
+        url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
+        dest: /home/vagrant/nginx-1.18.0.tar.gz
+    - name: "Download rtmp module"
+      get_url:
+        url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
+        dest: /home/vagrant/dev.zip
+    - name: "Download zlib"
+      get_url:
+        url: "http://zlib.net/zlib-1.2.11.tar.gz"
+        dest: /home/vagrant/zlib-1.2.11.tar.gz
+    - name: "Unzip nginx archive"
+      unarchive:
+        src: /home/vagrant/nginx-1.18.0.tar.gz
+        dest: /home/vagrant
+        remote_src: yes
+    - name: "Unzip rtmp module archive"
+      unarchive:
+        src: /home/vagrant/dev.zip
+        dest: /home/vagrant
+        remote_src: yes
+    - name: "Unzip zlib module archive"
+      unarchive:
+        src: /home/vagrant/zlib-1.2.11.tar.gz
+        dest: /home/vagrant
+        remote_src: yes
+    - name: "Configure nginx build"
+      command: ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev
+      args:
+        chdir: /home/vagrant/nginx-1.18.0
+    - name: Build nginx with rtmp module
+      make:
+        chdir: /home/vagrant/nginx-1.18.0
+    - name: Install nginx with rtmp module
+      make:
+        chdir: /home/vagrant/nginx-1.18.0
+        target: install
+      become: yes
+    - name: Send our config over
+      template:
+        src: nginx.conf.j2
+        dest: /usr/local/nginx/conf/nginx.conf
+        force: yes
+    - name: "Start nginx"
+      command: /usr/local/nginx/sbin/nginx
+      become: yes
