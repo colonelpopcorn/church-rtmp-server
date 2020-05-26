@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   provisioner = isWindows ? :ansible_local : :ansible
   config.vm.provision provisioner do |ansible|
     ansible.limit = "all"
-    ansible.sudo = true
+    ansible.become = true
     ansible.playbook = "bootstrap.yml"
   end
 end
