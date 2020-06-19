@@ -7,6 +7,11 @@
       - url: "a.rtmp.youtube.com/live2"
         key: "some-youtube-key"
   tasks:
+    - name: "Make sure /var/www exists"
+      file:
+        path: /var/www
+        state: directory
+        mode: "0755"
     - name: "Install nginx packages"
       apt:
         pkg:
@@ -17,45 +22,83 @@
           - unzip
         update_cache: yes
         state: present
+    - name: "Download golang"
+      get_url:
+        url: "https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz"
+        dest: "${HOME}/go1.14.4.linux-amd64.tar.gz"
     - name: "Download nginx"
       get_url:
         url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
-        dest: /home/vagrant/nginx-1.18.0.tar.gz
+        dest: "${HOME}/nginx-1.18.0.tar.gz"
     - name: "Download rtmp module"
       get_url:
         url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
-        dest: /home/vagrant/dev.zip
+        dest: "${HOME}/dev.zip"
     - name: "Download zlib"
       get_url:
         url: "http://zlib.net/zlib-1.2.11.tar.gz"
-        dest: /home/vagrant/zlib-1.2.11.tar.gz
+        dest: "${HOME}/zlib-1.2.11.tar.gz"
+    - name: "Unzip golang archive"
+      unarchive:
+        src: "${HOME}/go1.14.4.linux-amd64.tar.gz"
+        dest: "/usr/local"
+        remote_src: yes
+    - name: Symlink Go into /usr/local/bin
+      file: src="/usr/local/go/bin/{{ item }}"
+        dest="/usr/local/bin/{{ item }}"
+        state=link
+      with_items:
+        - go
+        - gofmt
     - name: "Unzip nginx archive"
       unarchive:
-        src: /home/vagrant/nginx-1.18.0.tar.gz
-        dest: /home/vagrant
+        src: "${HOME}/nginx-1.18.0.tar.gz"
+        dest: "${HOME}"
         remote_src: yes
     - name: "Unzip rtmp module archive"
       unarchive:
-        src: /home/vagrant/dev.zip
-        dest: /home/vagrant
+        src: "${HOME}/dev.zip"
+        dest: "${HOME}"
         remote_src: yes
     - name: "Unzip zlib module archive"
       unarchive:
-        src: /home/vagrant/zlib-1.2.11.tar.gz
-        dest: /home/vagrant
+        src: "${HOME}/zlib-1.2.11.tar.gz"
+        dest: "${HOME}"
         remote_src: yes
     - name: "Configure nginx build"
       command: ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev
       args:
-        chdir: /home/vagrant/nginx-1.18.0
+        chdir: "${HOME}/nginx-1.18.0"
     - name: Build nginx with rtmp module
       make:
-        chdir: /home/vagrant/nginx-1.18.0
+        chdir: "${HOME}/nginx-1.18.0"
     - name: Install nginx with rtmp module
       make:
-        chdir: /home/vagrant/nginx-1.18.0
+        chdir: "${HOME}/nginx-1.18.0"
         target: install
       become: yes
+    - name: Copy over go files for compilation
+      copy: src="{{ item }}"
+        dest="${HOME}/{{ item }}"
+      with_items:
+        - main.go
+        - go.mod
+        - go.sum
+    - name: "Compile our server"
+      command: "go build -o streaming-server main.go"
+      args:
+        chdir: "${HOME}"
+      become: true
+    - name: "Copy our web frontend over"
+      copy:
+        src: index.html
+        dest: /var/www/index.html
+        force: yes
+    - name: "Copy our web scripts over"
+      copy:
+        src: app.js
+        dest: /var/www/app.js
+        force: yes
     - name: Send our config over
       template:
         src: nginx.conf.j2

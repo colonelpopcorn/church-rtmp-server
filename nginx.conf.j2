@@ -17,12 +17,44 @@ rtmp {
     listen 1935;
     chunk_size 4096;
 
+    # Initial receiver for streams, used for authentication.
     application live {
+      # Receive live streams, but don't record them
       live on;
       record off;
+
+      # Stop anyone from playing the stream over RTMP
+      deny play all;
+      push rtmp://127.0.0.1:1935/hls-live;
+
+      # Push to other services
       {% for item in streams %}
       push rtmp://{{ item.url }}/{{ item.key }};
       {% endfor %}
+
+      # Verify stream keys
+      on_publish http://127.0.0.1:8080/verify-key;
+
+      on_publish_done http://127.0.0.1:8080/stream-over;
+    }
+
+    application hls-live {
+      live on;
+
+      # No RTMP playback
+      deny play all;
+
+      # Only allow publishing from localhost
+      allow publish 127.0.0.1;
+      deny publish all;
+
+      # Package this stream as HLS
+      hls on;
+      hls_path /var/www/live;
+
+      # Put streams in their own subdirectory under `hls_path`
+      hls_nested on;
+      hls_fragment_naming system;
     }
   }
 }
@@ -31,19 +63,8 @@ http {
     include       mime.types;
     default_type  application/octet-stream;
 
-    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-    #                  '$status $body_bytes_sent "$http_referer" '
-    #                  '"$http_user_agent" "$http_x_forwarded_for"';
-
-    #access_log  logs/access.log  main;
-
     sendfile        on;
-    #tcp_nopush     on;
-
-    #keepalive_timeout  0;
     keepalive_timeout  65;
-
-    #gzip  on;
 
     server {
         listen       80;
@@ -54,77 +75,17 @@ http {
         #access_log  logs/host.access.log  main;
 
         location / {
-            root   html;
+            root   /var/www;
             index  index.html index.htm;
         }
 
-        #error_page  404              /404.html;
-
-        # redirect server error pages to the static page /50x.html
-        #
         error_page   500 502 503 504  /50x.html;
         location = /50x.html {
-            root   html;
+            root   /var/www;
         }
 
-        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
-        #
-        #location ~ \.php$ {
-        #    proxy_pass   http://127.0.0.1;
-        #}
-
-        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
-        #
-        #location ~ \.php$ {
-        #    root           html;
-        #    fastcgi_pass   127.0.0.1:9000;
-        #    fastcgi_index  index.php;
-        #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
-        #    include        fastcgi_params;
-        #}
-
-        # deny access to .htaccess files, if Apache's document root
-        # concurs with nginx's one
-        #
-        #location ~ /\.ht {
-        #    deny  all;
-        #}
+        location /api {
+          proxy_pass http://localhost:8080/;
+        }
     }
-
-
-    # another virtual host using mix of IP-, name-, and port-based configuration
-    #
-    #server {
-    #    listen       8000;
-    #    listen       somename:8080;
-    #    server_name  somename  alias  another.alias;
-
-    #    location / {
-    #        root   html;
-    #        index  index.html index.htm;
-    #    }
-    #}
-
-
-    # HTTPS server
-    #
-    #server {
-    #    listen       443 ssl;
-    #    server_name  localhost;
-
-    #    ssl_certificate      cert.pem;
-    #    ssl_certificate_key  cert.key;
-
-    #    ssl_session_cache    shared:SSL:1m;
-    #    ssl_session_timeout  5m;
-
-    #    ssl_ciphers  HIGH:!aNULL:!MD5;
-    #    ssl_prefer_server_ciphers  on;
-
-    #    location / {
-    #        root   html;
-    #        index  index.html index.htm;
-    #    }
-    #}
-
 }
