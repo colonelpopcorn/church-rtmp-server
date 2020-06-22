@@ -1,4 +1,4 @@
-const BASE_URL = `http://${window.location}/api`;
+const BASE_URL = `${window.location}api`;
 
 const fetchWrapper = {
   get,

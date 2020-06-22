@@ -85,7 +85,7 @@
         - go.mod
         - go.sum
     - name: "Compile our server"
-      command: "go build -o streaming-server main.go"
+      command: "go build -o /usr/bin/streaming-server main.go"
       args:
         chdir: "${HOME}"
       become: true
@@ -104,6 +104,16 @@
         src: nginx.conf.j2
         dest: /usr/local/nginx/conf/nginx.conf
         force: yes
+    - name: Send the systemd service for streaming-server
+      copy:
+        src: streaming-server.service
+        dest: /etc/systemd/system/streaming-server.service
+        force: yes
+    - name: Start the streaming server
+      systemd:
+        name: streaming-server
+        enabled: yes
+        state: started
     - name: "Start nginx"
       command: /usr/local/nginx/sbin/nginx
       become: yes

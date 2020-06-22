@@ -84,7 +84,7 @@ http {
             root   /var/www;
         }
 
-        location /api {
+        location /api/ {
           proxy_pass http://localhost:8080/;
         }
     }
