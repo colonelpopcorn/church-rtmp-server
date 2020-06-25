@@ -18,6 +18,16 @@
       integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
       crossorigin="anonymous"
     />
+    <link href="https://vjs.zencdn.net/7.8.2/video-js.css" rel="stylesheet" />
+    <style>
+      .custom-spinner {
+        display: block;
+        position: fixed;
+        z-index: 1031; /* High z-index so it is on top of the page */
+        top: 50%;
+        right: 50%; /* or: left: 50%; */
+      }
+    </style>
   </head>
 
   <body>
@@ -44,7 +54,60 @@
               <tr v-for="stream in streams">
                 <th scope="row">{{ stream.Id }}</th>
                 <td>{{ stream.StreamKey }}</td>
-                <td>{{ stream.IsValid == 1 ? 'LIVE' : '' }}</td>
+                <td @click="openVideoModal()">
+                  <div v-if="stream.IsValid">
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      data-toggle="modal"
+                      data-target="#videoModal"
+                    >
+                      LIVE
+                    </button>
+                    <!-- Modal -->
+                    <div
+                      class="modal fade"
+                      id="videoModal"
+                      tabindex="-1"
+                      role="dialog"
+                      aria-labelledby="exampleModalCenterTitle"
+                      aria-hidden="true"
+                    >
+                      <div
+                        class="modal-dialog modal-dialog-centered"
+                        role="document"
+                      >
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLongTitle">
+                              Modal title
+                            </h5>
+                            <button
+                              type="button"
+                              class="close"
+                              data-dismiss="modal"
+                              aria-label="Close"
+                            >
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                          </div>
+                          <div class="modal-body">
+                            ...
+                          </div>
+                          <div class="modal-footer">
+                            <button
+                              type="button"
+                              class="btn btn-secondary"
+                              data-dismiss="modal"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
                 <td>
                   <button
                     type="button"
@@ -62,14 +125,18 @@
               </tr>
             </tbody>
           </table>
+          <div>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="createStream()"
+            >
+              Create Stream
+            </button>
+          </div>
         </div>
-        <div v-else class="spinner-border" role="status">
+        <div v-else class="custom-spinner spinner-border" role="status">
           <span class="sr-only">Loading...</span>
-        </div>
-        <div>
-          <button type="button" class="btn btn-primary" @click="createStream()">
-            Create Stream
-          </button>
         </div>
       </div>
     </div>
@@ -90,7 +157,7 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
+    <script src="https://vjs.zencdn.net/7.8.2/video.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
