@@ -1,16 +1,17 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"errors"
-	"net/http"
-	"log"
-	"os"
 	"fmt"
-	"crypto/rand"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/cors"
+	"log"
+	"net/http"
+	"os"
+
 	"github.com/gchaincl/dotsql"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library
 )
 
@@ -31,6 +32,9 @@ INSERT INTO stream_keys (stream_key, is_valid) VALUES (?, 0);
 
 -- name: delete-stream
 DELETE FROM stream_keys WHERE id = ?;
+
+-- name: toggle-stream
+UPDATE stream_keys (is_valid) VALUES (?) WHERE stream_key = ?;
 `
 // Stream obj
 type Stream struct {
@@ -46,7 +50,7 @@ func main() {
 	seedDb(sqlContext, dot)
 	r := gin.Default()
 	r.Use(cors.Default())
-	r.POST("/verify-key", func(c *gin.Context) {
+	r.POST("/verify-stream", func(c *gin.Context) {
 		key := c.DefaultPostForm("name", "")
 		if key == "" {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -55,9 +59,9 @@ func main() {
 			})
 			return
 		}
-		row, _ := dot.QueryRow(sqlContext, "verify-key", key)
-		var isValidKey bool
-		row.Scan(&isValidKey)
+		result, _ := dot.Exec(sqlContext, "toggle-stream", 1, key)
+		rowsAffected, _ := result.RowsAffected()
+		isValidKey := rowsAffected == 1
 		switch {
 		case isValidKey:
 			c.JSON(http.StatusOK, gin.H{
@@ -70,7 +74,6 @@ func main() {
 				"responseMessage": "No stream key here!",
 			})
 		}
-		
 	})
 	r.GET("/streams", func(c *gin.Context) {
 		streams := make([]Stream, 0)
@@ -135,6 +138,31 @@ func main() {
 			"success": false,
 			"responseMessage": "Deleted stream!",
 		})
+	})
+	r.POST("/stream-over", func(c *gin.Context) {
+		key := c.DefaultPostForm("name", "")
+		if key == "" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"responseMessage": "Something went wrong getting the stream key!",
+			})
+			return
+		}
+		result, _ := dot.Exec(sqlContext, "toggle-stream", 0, key)
+		rowsAffected, _ := result.RowsAffected()
+		isValidKey := rowsAffected == 1
+		switch {
+		case isValidKey:
+			c.JSON(http.StatusOK, gin.H{
+				"success": true,
+				"responseMessage": "Stream key is good!",
+			})
+		case !isValidKey:
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"responseMessage": "No stream key here!",
+			})
+		}
 	})
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

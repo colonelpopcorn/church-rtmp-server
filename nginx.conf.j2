@@ -33,7 +33,7 @@ rtmp {
       {% endfor %}
 
       # Verify stream keys
-      on_publish http://127.0.0.1:8080/verify-key;
+      on_publish http://127.0.0.1:8080/verify-stream;
 
       on_publish_done http://127.0.0.1:8080/stream-over;
     }
