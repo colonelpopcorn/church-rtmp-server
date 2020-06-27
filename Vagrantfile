@@ -1,6 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/bionic64"
   config.vm.network "private_network", ip: "10.0.1.15"
+  config.vm.hostname = 'streaming-server.vagrant'
   isWindows = Vagrant::Util::Platform.windows?
   provisioner = isWindows ? :ansible_local : :ansible
   config.vm.provision provisioner do |ansible|

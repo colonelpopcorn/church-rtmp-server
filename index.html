@@ -6,10 +6,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no"
     />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
 
-    <title>Bare - Start Bootstrap Template</title>
+    <title>Stream Manager - Home</title>
 
     <!-- Bootstrap core CSS -->
     <link
@@ -18,7 +16,6 @@
       integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
       crossorigin="anonymous"
     />
-    <link href="https://vjs.zencdn.net/7.8.2/video-js.css" rel="stylesheet" />
     <style>
       .custom-spinner {
         display: block;
@@ -54,58 +51,17 @@
               <tr v-for="stream in streams">
                 <th scope="row">{{ stream.Id }}</th>
                 <td>{{ stream.StreamKey }}</td>
-                <td @click="openVideoModal()">
+                <td>
                   <div v-if="stream.IsValid">
                     <button
                       type="button"
                       class="btn btn-danger"
                       data-toggle="modal"
                       data-target="#videoModal"
+                      @click="setStreamValue(stream.StreamKey)"
                     >
                       LIVE
                     </button>
-                    <!-- Modal -->
-                    <div
-                      class="modal fade"
-                      id="videoModal"
-                      tabindex="-1"
-                      role="dialog"
-                      aria-labelledby="exampleModalCenterTitle"
-                      aria-hidden="true"
-                    >
-                      <div
-                        class="modal-dialog modal-dialog-centered"
-                        role="document"
-                      >
-                        <div class="modal-content">
-                          <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLongTitle">
-                              Modal title
-                            </h5>
-                            <button
-                              type="button"
-                              class="close"
-                              data-dismiss="modal"
-                              aria-label="Close"
-                            >
-                              <span aria-hidden="true">&times;</span>
-                            </button>
-                          </div>
-                          <div class="modal-body">
-                            ...
-                          </div>
-                          <div class="modal-footer">
-                            <button
-                              type="button"
-                              class="btn btn-secondary"
-                              data-dismiss="modal"
-                            >
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </td>
                 <td>
@@ -125,6 +81,66 @@
               </tr>
             </tbody>
           </table>
+          <!-- Modal -->
+          <div
+            class="modal fade"
+            id="videoModal"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="exampleModalCenterTitle"
+            aria-hidden="true"
+          >
+            <div
+              class="modal-dialog modal-dialog-centered modal-lg"
+              role="document"
+            >
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLongTitle">
+                    Stream viewer
+                  </h5>
+                  <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal"
+                    aria-label="Close"
+                  >
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <video
+                    id="video"
+                    controls
+                    preload="auto"
+                    width="768"
+                    height="432"
+                  >
+                    <!-- <p class="vjs-no-js">
+                      To view this video please enable JavaScript, and consider
+                      upgrading to a web browser that
+                      <a
+                        href="https://videojs.com/html5-video-support/"
+                        target="_blank"
+                        >supports HTML5 video</a
+                      >
+                    </p> -->
+                  </video>
+                </div>
+                <div class="modal-footer">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-dismiss="modal"
+                    @click="streamModalClosed()"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Modal -->
           <div>
             <button
               type="button"
@@ -157,7 +173,8 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="https://vjs.zencdn.net/7.8.2/video.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://vjs.zencdn.net/7.8.3/video.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

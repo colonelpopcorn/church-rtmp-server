@@ -8,10 +8,12 @@
         key: "some-youtube-key"
   tasks:
     - name: "Make sure /var/www exists"
-      file:
-        path: /var/www
-        state: directory
-        mode: "0755"
+      file: path=/var/www/{{ item }}
+        state=directory
+        mode="0755"
+      with_items:
+        - html
+        - live
     - name: "Install nginx packages"
       apt:
         pkg:
@@ -92,12 +94,12 @@
     - name: "Copy our web frontend over"
       copy:
         src: index.html
-        dest: /var/www/index.html
+        dest: /var/www/html/index.html
         force: yes
     - name: "Copy our web scripts over"
       copy:
         src: app.js
-        dest: /var/www/app.js
+        dest: /var/www/html/app.js
         force: yes
     - name: Send our config over
       template:
@@ -105,15 +107,17 @@
         dest: /usr/local/nginx/conf/nginx.conf
         force: yes
     - name: Send the systemd service for streaming-server
-      copy:
-        src: streaming-server.service
-        dest: /etc/systemd/system/streaming-server.service
-        force: yes
+      copy: src="{{ item }}"
+        dest="/etc/systemd/system/{{ item }}"
+        force=yes
+      with_items:
+        - streaming-server.service
+        - nginx.service
     - name: Start the streaming server
-      systemd:
-        name: streaming-server
-        enabled: yes
-        state: started
-    - name: "Start nginx"
-      command: /usr/local/nginx/sbin/nginx
-      become: yes
+      systemd: name="{{ item }}"
+        enabled=yes
+        state=restarted
+        force=yes
+      with_items:
+        - streaming-server
+        - nginx

@@ -61,6 +61,7 @@ var app = new Vue({
     message: 'Hello Vue!',
     streamsLoaded: false,
     streams: [],
+    video: null,
   },
   created: function () {
     this.getStreams();
@@ -84,6 +85,21 @@ var app = new Vue({
       fetchWrapper
         .delete(`${BASE_URL}/streams/${id}`)
         .then((_) => this.getStreams());
+    },
+    setStreamValue(streamKey) {
+      this.video = document.getElementById('video');
+      if (Hls.isSupported()) {
+        var hls = new Hls();
+        hls.loadSource(`${window.location}live/${streamKey}/index.m3u8`);
+        hls.attachMedia(video);
+        // hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        //   video.play();
+        // });
+      }
+    },
+    streamModalClosed() {
+      // this.video.stop();
+      this.video = null;
     },
   },
 });

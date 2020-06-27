@@ -34,7 +34,7 @@ INSERT INTO stream_keys (stream_key, is_valid) VALUES (?, 0);
 DELETE FROM stream_keys WHERE id = ?;
 
 -- name: toggle-stream
-UPDATE stream_keys (is_valid) VALUES (?) WHERE stream_key = ?;
+UPDATE stream_keys SET is_valid = ? WHERE stream_key = ?;
 `
 // Stream obj
 type Stream struct {
@@ -59,7 +59,11 @@ func main() {
 			})
 			return
 		}
-		result, _ := dot.Exec(sqlContext, "toggle-stream", 1, key)
+		result, err := dot.Exec(sqlContext, "toggle-stream", 1, key)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "responseMessage": err.Error()})
+			return
+		}
 		rowsAffected, _ := result.RowsAffected()
 		isValidKey := rowsAffected == 1
 		switch {
