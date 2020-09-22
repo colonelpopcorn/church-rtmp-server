@@ -49,16 +49,16 @@
             </thead>
             <tbody v-if="streams.length > 0">
               <tr v-for="stream in streams">
-                <th scope="row">{{ stream.Id }}</th>
-                <td>{{ stream.StreamKey }}</td>
+                <th scope="row">{{ stream.streamId }}</th>
+                <td>{{ stream.streamKey }}</td>
                 <td>
-                  <div v-if="stream.IsValid">
+                  <div v-if="stream.isValidStream">
                     <button
                       type="button"
                       class="btn btn-danger"
                       data-toggle="modal"
                       data-target="#videoModal"
-                      @click="setStreamValue(stream.StreamKey)"
+                      @click="setStreamValue(stream.streamKey)"
                     >
                       LIVE
                     </button>
@@ -68,7 +68,7 @@
                   <button
                     type="button"
                     class="btn btn-danger"
-                    @click="deleteStream(stream.Id)"
+                    @click="deleteStream(stream.streamId)"
                   >
                     Delete Stream
                   </button>
