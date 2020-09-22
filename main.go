@@ -38,9 +38,9 @@ UPDATE stream_keys SET is_valid = ? WHERE stream_key = ?;
 `
 // Stream obj
 type Stream struct {
-	Id int `json:"streamId`
-	IsValid int `json:"isValidStream`
-	StreamKey string `json:"streamKey`
+	Id int `json:"streamId"`
+	IsValid int `json:"isValidStream"`
+	StreamKey string `json:"streamKey"`
 }
 
 func main() {
