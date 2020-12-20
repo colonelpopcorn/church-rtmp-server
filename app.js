@@ -55,9 +55,9 @@ function handleResponse(response) {
   });
 }
 
-Vue.use(window.VueCodeMirror, {
+Vue.use(window.VueCodemirror, {
   theme: "eclipse"
-})
+});
 
 var app = new Vue({
   el: '#app',
@@ -108,21 +108,11 @@ var app = new Vue({
       this.confEditorOpen = true;
       if (this.nginxContent === '') {
         fetchWrapper.get(`${BASE_URL}/nginx-conf`)
-        .then(res => (this.nginxContent = res.content))
-        .then(_ => this.initCodeMirror());
-      } else {
-        this.initCodeMirror();
+        .then(res => (this.nginxContent = res.content));
       }
-    },
-    initCodeMirror() {
-      this.codeMirror = CodeMirror(document.getElementById('conf-editor-window'), {
-        value: this.nginxContent,
-        mode: "nginx"
-      });
     },
     closeConfEditor() {
       this.confEditorOpen = false;
-      this.codeMirror = null;
     }
   },
 });
