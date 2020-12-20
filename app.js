@@ -95,23 +95,25 @@ var app = new Vue({
         var hls = new Hls();
         hls.loadSource(`${window.location}live/${streamKey}/index.m3u8`);
         hls.attachMedia(video);
-        // hls.on(Hls.Events.MANIFEST_PARSED, function () {
-        //   video.play();
-        // });
       }
     },
     streamModalClosed() {
-      // this.video.stop();
       this.video = null;
     },
-    openConfEditor() {
+    async openConfEditor() {
       this.confEditorOpen = true;
       if (this.nginxContent === '') {
-        this.nginxContent = await fetchWrapper.get(`${BASE_URL}/nginx-conf`).content;
+        fetchWrapper.get(`${BASE_URL}/nginx-conf`)
+        .then(res => (this.nginxContent = res.content))
+        .then(_ => this.initCodeMirror());
+      } else {
+        this.initCodeMirror();
       }
+    },
+    initCodeMirror() {
       this.codeMirror = CodeMirror(document.getElementById('conf-editor-window'), {
         value: this.nginxContent,
-        mode:  "nginx"
+        mode: "nginx"
       });
     },
     closeConfEditor() {
