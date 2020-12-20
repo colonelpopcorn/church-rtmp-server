@@ -62,6 +62,9 @@ var app = new Vue({
     streamsLoaded: false,
     streams: [],
     video: null,
+    nginxContent: '',
+    confEditorOpen: false,
+    codeMirror: null
   },
   created: function () {
     this.getStreams();
@@ -101,5 +104,19 @@ var app = new Vue({
       // this.video.stop();
       this.video = null;
     },
+    openConfEditor() {
+      this.confEditorOpen = true;
+      if (this.nginxContent === '') {
+        this.nginxContent = await fetchWrapper.get(`${BASE_URL}/nginx-conf`).content;
+      }
+      this.codeMirror = CodeMirror(document.getElementById('conf-editor-window'), {
+        value: this.nginxContent,
+        mode:  "nginx"
+      });
+    },
+    closeConfEditor() {
+      this.confEditorOpen = false;
+      this.codeMirror = null;
+    }
   },
 });
