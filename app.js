@@ -55,6 +55,10 @@ function handleResponse(response) {
   });
 }
 
+Vue.use(window.VueCodeMirror, {
+  theme: "eclipse"
+})
+
 var app = new Vue({
   el: '#app',
   data: {
@@ -64,7 +68,7 @@ var app = new Vue({
     video: null,
     nginxContent: '',
     confEditorOpen: false,
-    codeMirror: null
+    codeMirrorOpts: {}
   },
   created: function () {
     this.getStreams();

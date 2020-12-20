@@ -54,7 +54,11 @@
         <div v-if="confEditorOpen">
           <!-- Conf editor -->
           <div v-if="nginxContent !== ''">
-            <textarea id="conf-editor-window"> </textarea>
+            <codemirror
+              ref="cmEditor"
+              v-model="nginxContent"
+              :options="codeMirrorOpts"
+            />
           </div>
           <div v-else class="custom-spinner spinner-border" role="status">
             <span class="sr-only">Loading...</span>
@@ -189,6 +193,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.58.3/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-codemirror@4.0.6/dist/vue-codemirror.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
