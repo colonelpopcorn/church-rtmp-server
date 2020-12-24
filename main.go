@@ -14,6 +14,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library
+	"github.com/xgfone/ngconf"
 )
 
 const dbName = "sqlite-database.db"
@@ -46,6 +47,10 @@ type Stream struct {
 	Id        int    `json:"streamId"`
 	IsValid   int    `json:"isValidStream"`
 	StreamKey string `json:"streamKey"`
+}
+
+type NginxConf struct {
+	Content string `json:"content"`
 }
 
 func main() {
@@ -182,6 +187,7 @@ func main() {
 				RESPONSE_MESSAGE_KEY: "Failed to read nginx conf for editing.",
 				"ioUtilError":        err.Error(),
 			})
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			SUCCESS_KEY:          true,
@@ -190,21 +196,34 @@ func main() {
 		})
 	})
 	r.POST("/nginx-conf", func(c *gin.Context) {
-		content := c.DefaultPostForm("content", "")
-		if content == "" {
+		var content NginxConf
+		c.BindJSON(&content)
+		log.Println(content.Content)
+		if content.Content == "" {
+			log.Println("I don't know jimbo...")
 			c.JSON(http.StatusBadRequest, gin.H{
 				SUCCESS_KEY:          false,
 				RESPONSE_MESSAGE_KEY: "Content is empty, not saving file",
 			})
+			return
 		}
 		// TODO: verify valid nginx conf
-		err := ioutil.WriteFile(NGINX_PATH, []byte(content), 0644)
+		confIsValid := testNginxConf(content.Content)
+		if !confIsValid {
+			c.JSON(http.StatusBadRequest, gin.H{
+				SUCCESS_KEY:          false,
+				RESPONSE_MESSAGE_KEY: "Invalid config",
+			})
+			return
+		}
+		err := ioutil.WriteFile(NGINX_PATH, []byte(content.Content), 0644)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				SUCCESS_KEY:          false,
 				RESPONSE_MESSAGE_KEY: "Cannot save content",
 				"ioUtilError":        err.Error(),
 			})
+			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			SUCCESS_KEY:          true,
@@ -244,4 +263,9 @@ func generateGUID() (s string) {
 	uuid := fmt.Sprintf("%x-%x-%x",
 		b[0:4], b[4:6], b[6:])
 	return uuid
+}
+
+func testNginxConf(content string) (b bool) {
+	_, err := ngconf.Decode(content)
+	return err == nil
 }

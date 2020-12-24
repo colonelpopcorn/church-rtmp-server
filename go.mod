@@ -7,4 +7,5 @@ require (
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
+	github.com/xgfone/ngconf v0.1.0
 )

@@ -55,9 +55,7 @@ function handleResponse(response) {
   });
 }
 
-Vue.use(window.VueCodemirror, {
-  theme: "eclipse"
-});
+Vue.use(window.VueCodemirror);
 
 var app = new Vue({
   el: '#app',
@@ -67,11 +65,20 @@ var app = new Vue({
     streams: [],
     video: null,
     nginxContent: '',
+    initialNginxContent: '',
     confEditorOpen: false,
-    codeMirrorOpts: {}
+    codeMirrorOpts: {
+      theme: 'eclipse',
+      lineNumbers: true,
+      viewportMargin: Infinity,
+      mode: 'text/nginx'
+    }
   },
   created: function () {
     this.getStreams();
+  },
+  computed: {
+    nginxConfUnchanged: vm => vm.initialNginxContent === vm.nginxContent
   },
   methods: {
     getStreams() {
@@ -108,11 +115,20 @@ var app = new Vue({
       this.confEditorOpen = true;
       if (this.nginxContent === '') {
         fetchWrapper.get(`${BASE_URL}/nginx-conf`)
-        .then(res => (this.nginxContent = res.content));
+          .then(res => {
+            this.initialNginxContent = res.content;
+            this.nginxContent = this.initialNginxContent;
+          });
       }
     },
     closeConfEditor() {
       this.confEditorOpen = false;
+    },
+    submitNewContent() {
+      fetchWrapper.post(`${BASE_URL}/nginx-conf`, { content: this.nginxContent })
+        .then(() => this.initialNginxContent = this.nginxContent)
+        .catch(console.error)
+
     }
   },
 });
