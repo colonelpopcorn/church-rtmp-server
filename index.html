@@ -1,43 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
 
-    <title>Stream Manager - Home</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-    <!-- Bootstrap core CSS -->
-    <link
-      rel="stylesheet"
-      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
-      crossorigin="anonymous"
-    />
-    <style>
-      .custom-spinner {
-        display: block;
-        position: fixed;
-        z-index: 1031; /* High z-index so it is on top of the page */
-        top: 50%;
-        right: 50%; /* or: left: 50%; */
-      }
-    </style>
-  </head>
+  <title>Stream Manager - Home</title>
 
-  <body>
-    <div id="app">
-      <!-- Navigation -->
-      <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
-        <div class="container">
-          <a class="navbar-brand" href="#">Stream Manager</a>
-        </div>
-      </nav>
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+    integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.58.3/lib/codemirror.min.css" />
+  <style>
+    .custom-spinner {
+      display: block;
+      position: fixed;
+      z-index: 1031;
+      /* High z-index so it is on top of the page */
+      top: 50%;
+      right: 50%;
+      /* or: left: 50%; */
+    }
 
-      <!-- Page Content -->
+    .vue-codemirror {
+      height: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
       <div class="container">
+        <a class="navbar-brand" @click="closeConfEditor()">Stream Manager</a>
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" @click="openConfEditor()">Conf Editor</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+      <div v-if="confEditorOpen">
+        <!-- Conf editor -->
+        <div v-if="nginxContent !== ''">
+          <codemirror ref="cmEditor" v-model="nginxContent" :options="codeMirrorOpts" />
+        </div>
+        <div v-else class="custom-spinner spinner-border" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+        <button :disabled="nginxConfUnchanged" type="button" class="btn btn-primary float-right mt-3" @click="submitNewContent()">
+          Submit
+        </button>
+      </div>
+      <div v-else>
         <div v-if="streamsLoaded" id="results-table">
           <table class="table">
             <thead>
@@ -53,23 +72,14 @@
                 <td>{{ stream.streamKey }}</td>
                 <td>
                   <div v-if="stream.isValidStream">
-                    <button
-                      type="button"
-                      class="btn btn-danger"
-                      data-toggle="modal"
-                      data-target="#videoModal"
-                      @click="setStreamValue(stream.streamKey)"
-                    >
+                    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#videoModal"
+                      @click="setStreamValue(stream.streamKey)">
                       LIVE
                     </button>
                   </div>
                 </td>
                 <td>
-                  <button
-                    type="button"
-                    class="btn btn-danger"
-                    @click="deleteStream(stream.streamId)"
-                  >
+                  <button type="button" class="btn btn-danger" @click="deleteStream(stream.streamId)">
                     Delete Stream
                   </button>
                 </td>
@@ -82,48 +92,23 @@
             </tbody>
           </table>
           <!-- Modal -->
-          <div
-            class="modal fade"
-            id="videoModal"
-            tabindex="-1"
-            role="dialog"
-            aria-labelledby="exampleModalCenterTitle"
-            aria-hidden="true"
-          >
-            <div
-              class="modal-dialog modal-dialog-centered modal-lg"
-              role="document"
-            >
+          <div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+            aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
                   <h5 class="modal-title" id="exampleModalLongTitle">
                     Stream viewer
                   </h5>
-                  <button
-                    type="button"
-                    class="close"
-                    data-dismiss="modal"
-                    aria-label="Close"
-                  >
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                   </button>
                 </div>
                 <div class="modal-body">
-                  <video
-                    id="video"
-                    controls
-                    preload="auto"
-                    width="768"
-                    height="432"
-                  ></video>
+                  <video id="video" controls preload="auto" width="768" height="432"></video>
                 </div>
                 <div class="modal-footer">
-                  <button
-                    type="button"
-                    class="btn btn-secondary"
-                    data-dismiss="modal"
-                    @click="streamModalClosed()"
-                  >
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="streamModalClosed()">
                     Close
                   </button>
                 </div>
@@ -132,11 +117,7 @@
           </div>
           <!-- End Modal -->
           <div>
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="createStream()"
-            >
+            <button type="button" class="btn btn-primary" @click="createStream()">
               Create Stream
             </button>
           </div>
@@ -146,24 +127,22 @@
         </div>
       </div>
     </div>
-    <!-- Bootstrap core JavaScript -->
-    <script
-      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
-      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
-      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
-      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="app.js"></script>
-  </body>
+  </div>
+  <!-- Bootstrap core JavaScript -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.58.3/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-codemirror@4.0.6/dist/vue-codemirror.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
 </html>
