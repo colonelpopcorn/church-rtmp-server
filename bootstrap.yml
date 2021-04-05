@@ -93,12 +93,12 @@
       become: true
     - name: "Copy our web frontend over"
       copy:
-        src: index.html
+        src: client/index.html
         dest: /var/www/html/index.html
         force: yes
     - name: "Copy our web scripts over"
       copy:
-        src: app.js
+        src: client/app.js
         dest: /var/www/html/app.js
         force: yes
     - name: Send our config over
