@@ -26,6 +26,23 @@ CREATE TABLE IF NOT EXISTS stream_keys (
 	is_valid INTEGER NOT NULL
 );
 
+--name: create-users-table
+CREATE TABLE IF NOT EXISTS users (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT NOT NULL UNIQUE,
+	password TEXT NOT NULL,
+	is_admin INTEGER NOT NULL
+);
+
+--name: create-session-table
+CREATE TABLE IF NOT EXISTS session (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NOT NULL UNIQUE,
+	session_token TEXT NOT NULL,
+	expires TEXT NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
 -- name: get-streams
 SELECT id, is_valid, stream_key FROM stream_keys;
 
@@ -37,6 +54,18 @@ DELETE FROM stream_keys WHERE id = ?;
 
 -- name: toggle-stream
 UPDATE stream_keys SET is_valid = ? WHERE stream_key = ?;
+
+--name: create-new-user
+INSERT INTO users (username, password) VALUES (?, ?);
+
+--name: validate-user
+SELECT id FROM users WHERE username = ? and password = ?;
+
+--name: validate-session
+SELECT id from session WHERE session_token = ?
+
+--name: replace-session
+REPLACE INTO session(user_id, session_token, expires) VALUES (?, ?, ?);
 `
 const SUCCESS_KEY = "success"
 const RESPONSE_MESSAGE_KEY = "responseMessage"
@@ -51,6 +80,10 @@ type Stream struct {
 
 type NginxConf struct {
 	Content string `json:"content"`
+}
+
+type SessionToken struct {
+	Token string `json:"token"`
 }
 
 func main() {
