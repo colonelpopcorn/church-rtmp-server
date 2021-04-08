@@ -9,15 +9,15 @@ const fetchWrapper = {
 
 function get(url) {
   const requestOptions = {
-    method: 'GET',
+    method: "GET",
   };
   return fetch(url, requestOptions).then(handleResponse);
 }
 
 function post(url, body) {
   const requestOptions = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
   return fetch(url, requestOptions).then(handleResponse);
@@ -25,8 +25,8 @@ function post(url, body) {
 
 function put(url, body) {
   const requestOptions = {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
   return fetch(url, requestOptions).then(handleResponse);
@@ -35,7 +35,7 @@ function put(url, body) {
 // prefixed with underscored because delete is a reserved word in javascript
 function _delete(url) {
   const requestOptions = {
-    method: 'DELETE',
+    method: "DELETE",
   };
   return fetch(url, requestOptions).then(handleResponse);
 }
@@ -57,7 +57,7 @@ function handleResponse(response) {
 
 Vue.use(window.VueCodemirror);
 
-const Streams = {
+const StreamManager = {
   created: function () {
     this.getStreams();
   },
@@ -66,7 +66,7 @@ const Streams = {
       streamsLoaded: false,
       streams: [],
       video: null,
-    }
+    };
   },
   methods: {
     getStreams() {
@@ -89,7 +89,7 @@ const Streams = {
         .then((_) => this.getStreams());
     },
     setStreamValue(streamKey) {
-      this.video = document.getElementById('video');
+      this.video = document.getElementById("video");
       if (Hls.isSupported()) {
         var hls = new Hls();
         hls.loadSource(`${window.location}live/${streamKey}/index.m3u8`);
@@ -172,49 +172,48 @@ const Streams = {
         <span class="sr-only">Loading...</span>
     </div>
   </div>
-  `
+  `,
 };
 
 const ConfigEditor = {
   computed: {
-    nginxConfUnchanged: vm => vm.initialNginxContent === vm.nginxContent
+    nginxConfUnchanged: (vm) => vm.initialNginxContent === vm.nginxContent,
   },
-  created: function() {
+  created: function () {
     this.openConfEditor();
   },
   data: function () {
     return {
-      nginxContent: '',
-      initialNginxContent: '',
+      nginxContent: "",
+      initialNginxContent: "",
       confEditorOpen: false,
       codeMirrorOpts: {
-        theme: 'eclipse',
+        theme: "eclipse",
         lineNumbers: true,
         viewportMargin: Infinity,
-        mode: 'text/nginx'
-      }
-    }
+        mode: "text/nginx",
+      },
+    };
   },
   methods: {
     async openConfEditor() {
       this.confEditorOpen = true;
-      if (this.nginxContent === '') {
-        fetchWrapper.get(`${BASE_URL}/nginx-conf`)
-          .then(res => {
-            this.initialNginxContent = res.content;
-            this.nginxContent = this.initialNginxContent;
-          });
+      if (this.nginxContent === "") {
+        fetchWrapper.get(`${BASE_URL}/nginx-conf`).then((res) => {
+          this.initialNginxContent = res.content;
+          this.nginxContent = this.initialNginxContent;
+        });
       }
     },
     closeConfEditor() {
       this.confEditorOpen = false;
     },
     submitNewContent() {
-      fetchWrapper.post(`${BASE_URL}/nginx-conf`, { content: this.nginxContent })
-        .then(() => this.initialNginxContent = this.nginxContent)
-        .catch(console.error)
-
-    }
+      fetchWrapper
+        .post(`${BASE_URL}/nginx-conf`, { content: this.nginxContent })
+        .then(() => (this.initialNginxContent = this.nginxContent))
+        .catch(console.error);
+    },
   },
   template: `
   <div>
@@ -229,15 +228,65 @@ const ConfigEditor = {
       Submit
     </button>
   </div>
-  `
-}
+  `,
+};
 
-const routes = [{ path: '/', component: Streams }, { path: '/config-editor', component: ConfigEditor }];
+const LoginPage = {
+  template: `<div><p>Hello login component!</p></div>`,
+};
+
+const AuthService = {
+  async isAuthenticated() {
+    const validateSession = async (sessionToken) => {
+      try {
+        const response = fetchWrapper.post(`${BASE_URL}/validate-token`, {
+          sessionToken,
+        });
+        return (await response).ok;
+      } catch (err) {
+        console.error(err);
+        return false;
+      }
+    };
+    const sessionToken = localStorage.getItem("sessionToken");
+    return !!(await validateSession(sessionToken));
+  },
+};
+
+const AuthGuard = async (to, _, next) => {
+  if (to.meta.requiresAuth) {
+    const isAuthenticated = await AuthService.isAuthenticated();
+    if (isAuthenticated) {
+      next();
+    } else {
+      next("/login");
+    }
+  } else {
+    next();
+  }
+};
+
+const routes = [
+  { path: "/", redirect: "/stream-manager" },
+  { path: "/login", component: LoginPage },
+  {
+    path: "/stream-manager",
+    component: StreamManager,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/config-editor",
+    component: ConfigEditor,
+    meta: { requiresAuth: true },
+  },
+];
 
 const router = new VueRouter({
-  routes
+  routes,
 });
 
+router.beforeEach(AuthGuard);
+
 var app = new Vue({
-  router
+  router,
 }).$mount("#app");

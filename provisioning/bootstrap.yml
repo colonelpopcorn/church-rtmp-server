@@ -11,35 +11,27 @@
       file: path=/var/www/{{ item }}
         state=directory
         mode="0755"
+        owner=vagrant
+        group=vagrant
+        mode="0755"
       with_items:
         - html
         - live
-    - name: "Install nginx packages"
-      apt:
-        pkg:
-          - build-essential
-          - libpcre3
-          - libpcre3-dev
-          - libssl-dev
-          - unzip
-        update_cache: yes
-        state: present
+    - name: "Copy our web frontend over"
+      copy:
+        src: ../client/{{ item }}
+        dest: /var/www/html/{{ item }}
+        force: yes
+        owner: vagrant
+        group: vagrant
+      with_items:
+        - index.html
+        - app.js
+        - app.css
     - name: "Download golang"
       get_url:
         url: "https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz"
         dest: "${HOME}/go1.14.4.linux-amd64.tar.gz"
-    - name: "Download nginx"
-      get_url:
-        url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
-        dest: "${HOME}/nginx-1.18.0.tar.gz"
-    - name: "Download rtmp module"
-      get_url:
-        url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
-        dest: "${HOME}/dev.zip"
-    - name: "Download zlib"
-      get_url:
-        url: "http://zlib.net/zlib-1.2.11.tar.gz"
-        dest: "${HOME}/zlib-1.2.11.tar.gz"
     - name: "Unzip golang archive"
       unarchive:
         src: "${HOME}/go1.14.4.linux-amd64.tar.gz"
@@ -52,6 +44,40 @@
       with_items:
         - go
         - gofmt
+    - name: Copy over go files for compilation
+      copy: src="{{ item }}"
+        dest="${HOME}/"
+      with_fileglob:
+        - "../*.go"
+        - "../*.mod"
+        - "../*.sum"
+    - name: "Compile our server"
+      command: "go build -o /usr/bin/streaming-server"
+      args:
+        chdir: "${HOME}"
+      become: true
+    - name: "Install nginx packages"
+      apt:
+        pkg:
+          - build-essential
+          - libpcre3
+          - libpcre3-dev
+          - libssl-dev
+          - unzip
+        update_cache: yes
+        state: present
+    - name: "Download nginx"
+      get_url:
+        url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
+        dest: "${HOME}/nginx-1.18.0.tar.gz"
+    - name: "Download rtmp module"
+      get_url:
+        url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
+        dest: "${HOME}/dev.zip"
+    - name: "Download zlib"
+      get_url:
+        url: "http://zlib.net/zlib-1.2.11.tar.gz"
+        dest: "${HOME}/zlib-1.2.11.tar.gz"
     - name: "Unzip nginx archive"
       unarchive:
         src: "${HOME}/nginx-1.18.0.tar.gz"
@@ -79,28 +105,6 @@
         chdir: "${HOME}/nginx-1.18.0"
         target: install
       become: yes
-    - name: Copy over go files for compilation
-      copy: src="{{ item }}"
-        dest="${HOME}/{{ item }}"
-      with_items:
-        - main.go
-        - go.mod
-        - go.sum
-    - name: "Compile our server"
-      command: "go build -o /usr/bin/streaming-server main.go"
-      args:
-        chdir: "${HOME}"
-      become: true
-    - name: "Copy our web frontend over"
-      copy:
-        src: client/index.html
-        dest: /var/www/html/index.html
-        force: yes
-    - name: "Copy our web scripts over"
-      copy:
-        src: client/app.js
-        dest: /var/www/html/app.js
-        force: yes
     - name: Send our config over
       template:
         src: nginx.conf.j2

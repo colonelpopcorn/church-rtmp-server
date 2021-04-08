@@ -7,6 +7,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision provisioner do |ansible|
     ansible.limit = "all"
     ansible.become = true
-    ansible.playbook = "bootstrap.yml"
+    ansible.playbook = "provisioning/bootstrap.yml"
   end
 end
