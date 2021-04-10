@@ -31,15 +31,6 @@ CREATE TABLE IF NOT EXISTS users (
 	is_admin INTEGER NOT NULL
 );
 
---name: create-session-table
-CREATE TABLE IF NOT EXISTS session (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	user_id INTEGER NOT NULL UNIQUE,
-	session_token TEXT NOT NULL,
-	expires TEXT NOT NULL,
-	FOREIGN KEY(user_id) REFERENCES users(id)
-);
-
 -- name: get-streams
 SELECT id, is_valid, stream_key FROM stream_keys;
 
@@ -56,13 +47,7 @@ UPDATE stream_keys SET is_valid = ? WHERE stream_key = ?;
 INSERT INTO users (username, password) VALUES (?, ?);
 
 --name: validate-user
-SELECT id FROM users WHERE username = ? and password = ?;
-
---name: validate-session
-SELECT id from session WHERE session_token = ?
-
---name: replace-session
-REPLACE INTO session(user_id, session_token, expires) VALUES (?, ?, ?);
+SELECT id FROM users WHERE username = ? and password = ? LIMIT 1;
 `
 
 func DbInitialize() *DatabaseUtility {
@@ -122,4 +107,8 @@ func (db *DatabaseUtility) CreateNewStream(guid string) (sql.Result, error) {
 
 func (db *DatabaseUtility) DeleteStream(id string) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "delete-stream", id)
+}
+
+func (db *DatabaseUtility) Login(username string, password string) (*sql.Rows, error) {
+	return db.dot.Query(db.dbContext, "validate-user", username, password)
 }
