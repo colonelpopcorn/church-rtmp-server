@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
+	"io"
 	"log"
 	"os"
 
@@ -44,10 +46,10 @@ DELETE FROM stream_keys WHERE id = ?;
 UPDATE stream_keys SET is_valid = ? WHERE stream_key = ?;
 
 --name: create-new-user
-INSERT INTO users (username, password) VALUES (?, ?);
+INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?);
 
 --name: validate-user
-SELECT id FROM users WHERE username = ? and password = ? LIMIT 1;
+SELECT id, is_admin, password FROM users WHERE username = ? LIMIT 1;
 `
 
 func DbInitialize() *DatabaseUtility {
@@ -62,6 +64,18 @@ func DbInitialize() *DatabaseUtility {
 		db.dot = dot
 	}
 	db.seedDb()
+	initialAdminPassword := base64.RawStdEncoding.EncodeToString([]byte("initial-admin-password"))
+	db.CreateNewUser("admin", initialAdminPassword, 1)
+	file, fileError := os.Create("initial-admin-password")
+	if fileError != nil {
+		log.Fatalf("Cannot open file! %s", fileError)
+	}
+	defer file.Close()
+	_, writeError := io.WriteString(file, initialAdminPassword)
+	if writeError != nil {
+		log.Fatalf("Cannot write to file! %s", fileError)
+	}
+	file.Sync()
 	return db
 }
 
@@ -109,6 +123,11 @@ func (db *DatabaseUtility) DeleteStream(id string) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "delete-stream", id)
 }
 
-func (db *DatabaseUtility) Login(username string, password string) (*sql.Rows, error) {
+func (db *DatabaseUtility) Login(username, password string) (*sql.Rows, error) {
 	return db.dot.Query(db.dbContext, "validate-user", username, password)
+}
+
+func (db *DatabaseUtility) CreateNewUser(username, password string, isAdmin int) (sql.Result, error) {
+	hashedPwd, _ := HashPassword(password)
+	return db.dot.Exec(db.dbContext, "create-new-user", username, hashedPwd, isAdmin)
 }
