@@ -17,6 +17,8 @@
       with_items:
         - html
         - live
+      tags:
+        - frontend
     - name: "Copy our web frontend over"
       copy:
         src: ../client/{{ item }}
@@ -28,35 +30,9 @@
         - index.html
         - app.js
         - app.css
-    - name: "Download golang"
-      get_url:
-        url: "https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz"
-        dest: "${HOME}/go1.14.4.linux-amd64.tar.gz"
-    - name: "Unzip golang archive"
-      unarchive:
-        src: "${HOME}/go1.14.4.linux-amd64.tar.gz"
-        dest: "/usr/local"
-        remote_src: yes
-    - name: Symlink Go into /usr/local/bin
-      file: src="/usr/local/go/bin/{{ item }}"
-        dest="/usr/local/bin/{{ item }}"
-        state=link
-      with_items:
-        - go
-        - gofmt
-    - name: Copy over go files for compilation
-      copy: src="{{ item }}"
-        dest="${HOME}/"
-      with_fileglob:
-        - "../*.go"
-        - "../*.mod"
-        - "../*.sum"
-    - name: "Compile our server"
-      command: "go build -o /usr/bin/streaming-server"
-      args:
-        chdir: "${HOME}"
-      become: true
-    - name: "Install nginx packages"
+      tags:
+        - frontend
+    - name: "Install build packages"
       apt:
         pkg:
           - build-essential
@@ -66,50 +42,110 @@
           - unzip
         update_cache: yes
         state: present
+      tags:
+        - backend
+    - name: "Download golang"
+      get_url:
+        url: "https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz"
+        dest: "${HOME}/go1.14.4.linux-amd64.tar.gz"
+      tags:
+        - backend
+    - name: "Unzip golang archive"
+      unarchive:
+        src: "${HOME}/go1.14.4.linux-amd64.tar.gz"
+        dest: "/usr/local"
+        remote_src: yes
+      tags:
+        - backend
+    - name: Symlink Go into /usr/local/bin
+      file: src="/usr/local/go/bin/{{ item }}"
+        dest="/usr/local/bin/{{ item }}"
+        state=link
+      with_items:
+        - go
+        - gofmt
+      tags:
+        - backend
+    - name: Copy over go files for compilation
+      copy: src="{{ item }}"
+        dest="${HOME}/"
+      with_fileglob:
+        - "../*.go"
+        - "../*.mod"
+        - "../*.sum"
+      tags:
+        - backend
+    - name: "Compile our server"
+      command: "go build -o /usr/bin/streaming-server"
+      args:
+        chdir: "${HOME}"
+      become: true
+      tags:
+        - backend
     - name: "Download nginx"
       get_url:
         url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
         dest: "${HOME}/nginx-1.18.0.tar.gz"
+      tags:
+        - proxy
     - name: "Download rtmp module"
       get_url:
         url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
         dest: "${HOME}/dev.zip"
+      tags:
+        - proxy
     - name: "Download zlib"
       get_url:
         url: "http://zlib.net/zlib-1.2.11.tar.gz"
         dest: "${HOME}/zlib-1.2.11.tar.gz"
+      tags:
+        - proxy
     - name: "Unzip nginx archive"
       unarchive:
         src: "${HOME}/nginx-1.18.0.tar.gz"
         dest: "${HOME}"
         remote_src: yes
+      tags:
+        - proxy
     - name: "Unzip rtmp module archive"
       unarchive:
         src: "${HOME}/dev.zip"
         dest: "${HOME}"
         remote_src: yes
+      tags:
+        - proxy
     - name: "Unzip zlib module archive"
       unarchive:
         src: "${HOME}/zlib-1.2.11.tar.gz"
         dest: "${HOME}"
         remote_src: yes
+      tags:
+        - proxy
     - name: "Configure nginx build"
       command: ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev
       args:
         chdir: "${HOME}/nginx-1.18.0"
+      tags:
+        - proxy
     - name: Build nginx with rtmp module
       make:
         chdir: "${HOME}/nginx-1.18.0"
+      tags:
+        - proxy
     - name: Install nginx with rtmp module
       make:
         chdir: "${HOME}/nginx-1.18.0"
         target: install
       become: yes
+      tags:
+        - proxy
     - name: Send our config over
       template:
         src: nginx.conf.j2
         dest: /usr/local/nginx/conf/nginx.conf
         force: yes
+      tags:
+        - proxy
     - name: Send the systemd service for streaming-server
       copy: src="{{ item }}"
         dest="/etc/systemd/system/{{ item }}"
@@ -117,6 +153,9 @@
       with_items:
         - streaming-server.service
         - nginx.service
+      tags:
+        - backend
+        - proxy
     - name: Start the streaming server
       systemd: name="{{ item }}"
         enabled=yes
@@ -125,3 +164,6 @@
       with_items:
         - streaming-server
         - nginx
+      tags:
+        - proxy
+        - backend

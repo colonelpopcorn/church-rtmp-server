@@ -8,5 +8,7 @@ Vagrant.configure("2") do |config|
     ansible.limit = "all"
     ansible.become = true
     ansible.playbook = "provisioning/bootstrap.yml"
+    # Change and uncomment to work only on certain parts.
+    # ansible.raw_arguments = ["--tags", "frontend"]
   end
 end
