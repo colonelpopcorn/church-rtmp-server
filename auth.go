@@ -22,7 +22,7 @@ type User struct {
 }
 
 type AuthorizedUser struct {
-	UserId  int
+	UserId  float64
 	IsAdmin bool
 }
 
@@ -47,7 +47,7 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
 			return &AuthorizedUser{
-				UserId:  claims[identityKey].(int),
+				UserId:  claims[identityKey].(float64),
 				IsAdmin: claims["isAdmin"].(bool),
 			}
 		},
@@ -70,7 +70,7 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 			}
 			defer rows.Close()
 			for rows.Next() {
-				var id int
+				var id float64
 				var isAdmin bool
 				var hash string
 				err := rows.Scan(&id, &isAdmin, &hash)

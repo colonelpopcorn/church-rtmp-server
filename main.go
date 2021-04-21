@@ -25,11 +25,19 @@ func main() {
 	r.Use(cors.Default())
 	r.POST("/login", authController.AuthMiddleware.LoginHandler)
 	r.POST("/verify-stream", streamController.VerifyStream)
-	r.GET("/streams", streamController.GetStreams)
-	r.POST("/create-key", streamController.CreateKey)
-	r.DELETE("/streams/:id", streamController.DeleteStream)
 	r.POST("/stream-over", streamController.EndStream)
-	r.GET("/nginx-conf", confController.GetConfiguration)
-	r.POST("/nginx-conf", confController.UpdateConfiguration)
+	streamGroup := r.Group("streams")
+	streamGroup.Use(authController.AuthMiddleware.MiddlewareFunc())
+	{
+		streamGroup.GET("/", streamController.GetStreams)
+		streamGroup.POST("/create-key", streamController.CreateKey)
+		streamGroup.DELETE("/:id", streamController.DeleteStream)
+	}
+	nginxGroup := r.Group("/nginx")
+	nginxGroup.Use(authController.AuthMiddleware.MiddlewareFunc())
+	{
+		nginxGroup.GET("/config", confController.GetConfiguration)
+		nginxGroup.POST("/config", confController.UpdateConfiguration)
+	}
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
