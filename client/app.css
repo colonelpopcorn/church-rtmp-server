@@ -1,0 +1,25 @@
+.custom-spinner {
+  display: block;
+  position: fixed;
+  z-index: 1031;
+  /* High z-index so it is on top of the page */
+  top: 50%;
+  right: 50%;
+  /* or: left: 50%; */
+}
+
+.vue-codemirror {
+  height: auto;
+}
+
+#login-row #login-column #login-box {
+  margin-top: 25%;
+  max-width: 600px;
+  height: 320px;
+  border: 1px solid #9C9C9C;
+  background-color: #EAEAEA;
+}
+
+#login-row #login-column #login-box #login-form {
+  padding: 20px;
+}

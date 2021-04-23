@@ -1,13 +1,34 @@
 
-# Created by https://www.gitignore.io/api/vagrant,ansible
-# Edit at https://www.gitignore.io/?templates=vagrant,ansible
+# Created by https://www.toptal.com/developers/gitignore/api/go,vagrant,ansible
+# Edit at https://www.toptal.com/developers/gitignore?templates=go,vagrant,ansible
 
 ### Ansible ###
 *.retry
 
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+### Go Patch ###
+/vendor/
+/Godeps/
+
 ### Vagrant ###
 # General
-.vagrant/*
+.vagrant/
 
 # Log files (if you are creating logs in debug mode, uncomment this)
 # *.log
@@ -15,8 +36,10 @@
 ### Vagrant Patch ###
 *.box
 
-# End of https://www.gitignore.io/api/vagrant,ansible
+# End of https://www.toptal.com/developers/gitignore/api/go,vagrant,ansible
 
 *-cloudimg-console.log
 
 *.db
+
+initial-admin-password
