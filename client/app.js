@@ -207,7 +207,7 @@ const ConfigEditor = {
     async openConfEditor() {
       this.confEditorOpen = true;
       if (this.nginxContent === "") {
-        fetchWrapper.get(`${BASE_URL}/nginx-conf`).then((res) => {
+        fetchWrapper.get(`${BASE_URL}/nginx/config`).then((res) => {
           this.initialNginxContent = res.content;
           this.nginxContent = this.initialNginxContent;
         });
@@ -218,7 +218,7 @@ const ConfigEditor = {
     },
     submitNewContent() {
       fetchWrapper
-        .post(`${BASE_URL}/nginx-conf`, { content: this.nginxContent })
+        .post(`${BASE_URL}/nginx/config`, { content: this.nginxContent })
         .then(() => (this.initialNginxContent = this.nginxContent))
         .catch(console.error);
     },
