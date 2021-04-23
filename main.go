@@ -24,6 +24,7 @@ func main() {
 	r := gin.Default()
 	r.Use(cors.Default())
 	r.POST("/login", authController.AuthMiddleware.LoginHandler)
+	r.POST("/logout", authController.AuthMiddleware.LogoutHandler)
 	r.POST("/verify-stream", streamController.VerifyStream)
 	r.POST("/stream-over", streamController.EndStream)
 	streamGroup := r.Group("streams")

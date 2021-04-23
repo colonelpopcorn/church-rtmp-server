@@ -356,9 +356,11 @@ const STREAMING_APP = new Vue({
   },
   methods: {
     logout() {
-      localStorage.setItem(SESSION_KEY, "");
-      this.isAdmin = false;
-      this.routes = [];
+      fetchWrapper.post(`${BASE_URL}/logout`, {}).then(() => {
+        localStorage.setItem(SESSION_KEY, "");
+        this.isAdmin = false;
+        this.routes = [];
+      });
     },
   },
 }).$mount("#app");
