@@ -20,9 +20,14 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
       <div class="container">
         <router-link class="navbar-brand" to="/stream-manager">Stream Manager</router-link>
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item active">
-            <router-link class="nav-link" to="/config-editor">Config Editor</router-link>
+        <ul v-if="isAdmin" class="navbar-nav mr-auto">
+          <li v-for="route in routes" class="nav-item active">
+            <router-link class="nav-link" :to="route.path">{{ route.name }}</router-link>
+          </li>
+        </ul>
+        <ul class="navbar-nav justify-content-end">
+          <li class="nav-item-active" @click="logout()">
+            <router-link class="nav-link" to="/login">Logout</router-link>
           </li>
         </ul>
       </div>

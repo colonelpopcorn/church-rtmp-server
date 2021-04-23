@@ -11,3 +11,15 @@
 .vue-codemirror {
   height: auto;
 }
+
+#login-row #login-column #login-box {
+  margin-top: 25%;
+  max-width: 600px;
+  height: 320px;
+  border: 1px solid #9C9C9C;
+  background-color: #EAEAEA;
+}
+
+#login-row #login-column #login-box #login-form {
+  padding: 20px;
+}

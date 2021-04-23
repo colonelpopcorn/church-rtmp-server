@@ -7,9 +7,16 @@ const fetchWrapper = {
   delete: _delete,
 };
 
+const SESSION_KEY = "sessionToken";
+const DEFAULT_HEADERS = () => {
+  const sessionToken = localStorage.getItem(SESSION_KEY);
+  return { Authorization: sessionToken ? `Bearer ${sessionToken}` : "" };
+};
+
 function get(url) {
   const requestOptions = {
     method: "GET",
+    headers: { ...DEFAULT_HEADERS() },
   };
   return fetch(url, requestOptions).then(handleResponse);
 }
@@ -17,7 +24,7 @@ function get(url) {
 function post(url, body) {
   const requestOptions = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { ...DEFAULT_HEADERS(), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
   return fetch(url, requestOptions).then(handleResponse);
@@ -26,7 +33,7 @@ function post(url, body) {
 function put(url, body) {
   const requestOptions = {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { ...DEFAULT_HEADERS(), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
   return fetch(url, requestOptions).then(handleResponse);
@@ -36,6 +43,7 @@ function put(url, body) {
 function _delete(url) {
   const requestOptions = {
     method: "DELETE",
+    headers: { ...DEFAULT_HEADERS() },
   };
   return fetch(url, requestOptions).then(handleResponse);
 }
@@ -71,7 +79,7 @@ const StreamManager = {
   methods: {
     getStreams() {
       fetchWrapper
-        .get(`${BASE_URL}/streams`)
+        .get(`${BASE_URL}/streams/`)
         .then((data) => {
           this.streams = data.streams;
           this.streamsLoaded = true;
@@ -80,7 +88,7 @@ const StreamManager = {
     },
     createStream() {
       fetchWrapper
-        .post(`${BASE_URL}/create-key`)
+        .post(`${BASE_URL}/streams/create-key`)
         .then((_) => this.getStreams());
     },
     deleteStream(id) {
@@ -232,24 +240,75 @@ const ConfigEditor = {
 };
 
 const LoginPage = {
-  template: `<div><p>Hello login component!</p></div>`,
+  template: `
+  <div id="login-row" class="row justify-content-center align-items-center">
+    <div id="login-column" class="col-md-6">
+      <div id="login-box" class="col-md-12">
+        <form id="login-form" class="form-signin" @submit.prevent="login()">
+          <h3 class="text-center">Login</h3>
+          <div class="form-group">
+            <label for="username" class="sr-only">Email address</label>
+            <input
+              v-model="username"
+              type="text"
+              id="username"
+              class="form-control"
+              placeholder="Username"
+              required=""
+              autofocus=""
+            />
+          </div>
+          <div class="form-group">
+            <label for="password" class="sr-only">Password</label>
+            <input
+              v-model="password"
+              type="password"
+              id="password"
+              class="form-control"
+              placeholder="Password"
+              required=""
+            />
+          </div>
+          <div class="form-group">
+            <input type="submit" name="submit" class="btn btn-primary btn-block" value="Submit">
+          </div>
+          <div class="form-group float-right">
+            <label for="remember-me"><span>Remember me</span> <span><input id="remember-me" name="remember-me" type="checkbox"></span></label>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>`,
+  data() {
+    return {
+      username: "",
+      password: "",
+    };
+  },
+  methods: {
+    async login() {
+      const response = await fetchWrapper.post(`${BASE_URL}/login`, {
+        username: this.username,
+        password: this.password,
+      });
+      if (response) {
+        if (response.token) {
+          localStorage.setItem(SESSION_KEY, response.token);
+        }
+        if (response.isAdmin && response.routes) {
+          STREAMING_APP.routes = response.routes;
+          STREAMING_APP.isAdmin = response.isAdmin;
+        }
+        this.$router.push("/");
+      }
+    },
+  },
 };
 
 const AuthService = {
   async isAuthenticated() {
-    const validateSession = async (sessionToken) => {
-      try {
-        const response = fetchWrapper.post(`${BASE_URL}/validate-token`, {
-          sessionToken,
-        });
-        return (await response).ok;
-      } catch (err) {
-        console.error(err);
-        return false;
-      }
-    };
-    const sessionToken = localStorage.getItem("sessionToken");
-    return !!(await validateSession(sessionToken));
+    const sessionToken = localStorage.getItem(SESSION_KEY);
+    return !!sessionToken;
   },
 };
 
@@ -287,6 +346,19 @@ const router = new VueRouter({
 
 router.beforeEach(AuthGuard);
 
-var app = new Vue({
+const STREAMING_APP = new Vue({
   router,
+  data() {
+    return {
+      isAdmin: false,
+      routes: [],
+    };
+  },
+  methods: {
+    logout() {
+      localStorage.setItem(SESSION_KEY, "");
+      this.isAdmin = false;
+      this.routes = [];
+    },
+  },
 }).$mount("#app");
