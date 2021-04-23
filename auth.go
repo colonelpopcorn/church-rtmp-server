@@ -26,6 +26,7 @@ type AuthorizedUser struct {
 	IsAdmin bool
 }
 
+const userInfoKey = "userInfo"
 const identityKey = "userId"
 
 func AuthInitialize(db *DatabaseUtility) *AuthController {
@@ -35,6 +36,33 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 		Timeout:     time.Hour,
 		MaxRefresh:  time.Hour,
 		IdentityKey: identityKey,
+		LoginResponse: func(c *gin.Context, code int, token string, t time.Time) {
+
+			claims, _ := c.Get(userInfoKey)
+			isAdmin := claims.(*AuthorizedUser).IsAdmin
+			routes := []gin.H{
+				{"path": "/config-editor", "name": "Configuration Editor"},
+				{"path": "/user-manager", "name": "User Manager"},
+			}
+			nonAdminResponse := gin.H{
+				"code":    http.StatusOK,
+				"token":   token,
+				"expire":  t.Format(time.RFC3339),
+				"isAdmin": isAdmin,
+			}
+			adminResponse := gin.H{
+				"code":    http.StatusOK,
+				"token":   token,
+				"expire":  t.Format(time.RFC3339),
+				"isAdmin": isAdmin,
+				"routes":  routes,
+			}
+			if isAdmin {
+				c.JSON(http.StatusOK, adminResponse)
+			} else {
+				c.JSON(http.StatusOK, nonAdminResponse)
+			}
+		},
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*AuthorizedUser); ok {
 				return jwt.MapClaims{
@@ -80,17 +108,20 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 				}
 				compare := CheckPasswordHash(password, hash)
 				if compare {
-					return &AuthorizedUser{
+					authedUser := &AuthorizedUser{
 						UserId:  id,
 						IsAdmin: isAdmin,
-					}, nil
+					}
+					ctx.Set(userInfoKey, authedUser)
+					log.Println(authedUser)
+					return authedUser, nil
 				}
 			}
 			return nil, errors.New("Illegal state, we shouldn't get here!")
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			v, ok := data.(*AuthorizedUser)
-			return ok && v.IsAdmin
+			_, ok := data.(*AuthorizedUser)
+			return ok
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{

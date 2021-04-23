@@ -15,6 +15,11 @@ type ConfigController struct {
 
 const NGINX_PATH = "/usr/local/nginx/conf/nginx.conf"
 
+var UNAUTHORIZED_RESPONSE = gin.H{
+	SUCCESS_KEY:          false,
+	RESPONSE_MESSAGE_KEY: "Unauthorized",
+}
+
 // Stream obj
 
 type NginxConf struct {
@@ -22,6 +27,14 @@ type NginxConf struct {
 }
 
 func (cc *ConfigController) GetConfiguration(c *gin.Context) {
+	claims := c.GetStringMap(userInfoKey)
+	if !(claims["isAdmin"].(bool)) {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			SUCCESS_KEY:          false,
+			RESPONSE_MESSAGE_KEY: "Unauthorized",
+		})
+		return
+	}
 	content, err := ioutil.ReadFile(NGINX_PATH)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -39,11 +52,16 @@ func (cc *ConfigController) GetConfiguration(c *gin.Context) {
 }
 
 func (cc *ConfigController) UpdateConfiguration(c *gin.Context) {
+	claims := c.GetStringMap(userInfoKey)
+	if !(claims["isAdmin"].(bool)) {
+		c.JSON(http.StatusUnauthorized, UNAUTHORIZED_RESPONSE)
+		return
+	}
 	var content NginxConf
 	c.BindJSON(&content)
 	log.Println(content.Content)
 	if content.Content == "" {
-		log.Println("I don't know jimbo...")
+		log.Fatal("I don't know jimbo...")
 		c.JSON(http.StatusBadRequest, gin.H{
 			SUCCESS_KEY:          false,
 			RESPONSE_MESSAGE_KEY: "Content is empty, not saving file",
