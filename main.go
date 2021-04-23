@@ -15,7 +15,7 @@ func main() {
 	DB := DbInitialize()
 	defer DB.CloseDb()
 	streamController := StreamController{DB}
-	confController := ConfigController{DB}
+	confController := ConfigController{}
 	authController := AuthInitialize(DB)
 	errInit := authController.AuthMiddleware.MiddlewareInit()
 	if errInit != nil {

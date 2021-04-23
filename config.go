@@ -9,9 +9,7 @@ import (
 	"github.com/xgfone/ngconf"
 )
 
-type ConfigController struct {
-	DB *DatabaseUtility
-}
+type ConfigController struct{}
 
 const NGINX_PATH = "/usr/local/nginx/conf/nginx.conf"
 
