@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/xgfone/ngconf"
 )
@@ -18,14 +19,12 @@ var UNAUTHORIZED_RESPONSE = gin.H{
 	RESPONSE_MESSAGE_KEY: "Unauthorized",
 }
 
-// Stream obj
-
 type NginxConf struct {
 	Content string `json:"content"`
 }
 
 func (cc *ConfigController) GetConfiguration(c *gin.Context) {
-	claims := c.GetStringMap(userInfoKey)
+	claims := jwt.ExtractClaims(c)
 	if !(claims["isAdmin"].(bool)) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			SUCCESS_KEY:          false,
@@ -50,7 +49,7 @@ func (cc *ConfigController) GetConfiguration(c *gin.Context) {
 }
 
 func (cc *ConfigController) UpdateConfiguration(c *gin.Context) {
-	claims := c.GetStringMap(userInfoKey)
+	claims := jwt.ExtractClaims(c)
 	if !(claims["isAdmin"].(bool)) {
 		c.JSON(http.StatusUnauthorized, UNAUTHORIZED_RESPONSE)
 		return
