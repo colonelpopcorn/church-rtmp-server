@@ -1,6 +1,7 @@
 ---
 - hosts: all
   vars:
+    owner: root
     streams:
       - url: "webcast.sermonaudio.com/sa"
         key: "some-sa-key"
@@ -11,8 +12,8 @@
       file: path=/var/www/{{ item }}
         state=directory
         mode="0755"
-        owner=vagrant
-        group=vagrant
+        owner={{ owner }}
+        group={{ owner }}
         mode="0755"
       with_items:
         - html
@@ -24,8 +25,8 @@
         src: ../client/{{ item }}
         dest: /var/www/html/{{ item }}
         force: yes
-        owner: vagrant
-        group: vagrant
+        owner: "{{ owner }}"
+        group: "{{ owner }}"
       with_items:
         - index.html
         - app.js
