@@ -8,6 +8,9 @@ Vagrant.configure("2") do |config|
     ansible.limit = "all"
     ansible.become = true
     ansible.playbook = "provisioning/bootstrap.yml"
+    ansible.extra_vars = {
+      owner: "vagrant"
+    }
     # Change and uncomment to work only on certain parts.
     # ansible.raw_arguments = ["--tags", "frontend"]
   end
