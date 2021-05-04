@@ -64,11 +64,13 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 		},
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(*AuthorizedUser); ok {
+				log.Println("We're ok!")
 				return jwt.MapClaims{
 					identityKey: v.UserId,
 					"isAdmin":   v.IsAdmin,
 				}
 			}
+			log.Println("We're not ok!")
 			return jwt.MapClaims{}
 		},
 		IdentityHandler: func(c *gin.Context) interface{} {
@@ -112,11 +114,11 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 						IsAdmin: isAdmin,
 					}
 					ctx.Set(userInfoKey, authedUser)
-					log.Println(authedUser)
 					return authedUser, nil
 				}
 			}
-			return nil, errors.New("Illegal state, we shouldn't get here!")
+			// GUID for username password incorrect
+			return nil, errors.New("c1615983-3d24-400a-b0d0-a935e1c4f0d")
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
 			_, ok := data.(*AuthorizedUser)
@@ -137,6 +139,22 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 		return &AuthController{database: db}
 	}
 	return &AuthController{database: db, AuthMiddleware: authMiddleware}
+}
+
+func (ac *AuthController) VerifyToken(ctx *gin.Context) {
+	claims := jwt.ExtractClaims(ctx)
+	if claims[identityKey] != nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			SUCCESS_KEY:          true,
+			RESPONSE_MESSAGE_KEY: "Successfully verified token.",
+		})
+		return
+	} else {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			SUCCESS_KEY:          "false",
+			RESPONSE_MESSAGE_KEY: "Token expired please renew!",
+		})
+	}
 }
 
 func HashPassword(password string) (string, error) {
