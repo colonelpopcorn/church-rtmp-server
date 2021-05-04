@@ -296,7 +296,7 @@ const LoginPage = {
               />
             </div>
             <div class="form-group">
-              <input type="submit" name="submit" class="btn btn-primary btn-block" value="Submit">
+              <input type="submit" name="submit" class="btn btn-primary btn-block" :disabled="isLoggingIn" value="Submit">
             </div>
             <div class="form-group float-right">
               <label for="remember-me"><span>Remember me</span> <span><input id="remember-me" name="remember-me" type="checkbox"></span></label>
@@ -312,10 +312,12 @@ const LoginPage = {
       password: "",
       alertContent: "",
       alertShouldShow: false,
+      isLoggingIn: false,
     };
   },
   methods: {
     login() {
+      this.isLoggingIn = true;
       fetchWrapper
         .post(`${BASE_URL}/login`, {
           username: this.username,
@@ -333,6 +335,9 @@ const LoginPage = {
             }
             this.$router.push("/");
           }
+        })
+        .then((_) => {
+          this.isLoggingIn = false;
         })
         .catch((err) => errorResponse(this, err));
     },
