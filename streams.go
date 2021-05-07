@@ -1,11 +1,9 @@
 package main
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -142,15 +140,4 @@ func (sc *StreamController) EndStream(c *gin.Context) {
 			RESPONSE_MESSAGE_KEY: "No stream key here!",
 		})
 	}
-}
-
-func generateGUID() (s string) {
-	b := make([]byte, 10)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Fatal(err)
-	}
-	uuid := fmt.Sprintf("%x-%x-%x",
-		b[0:4], b[4:6], b[6:])
-	return uuid
 }

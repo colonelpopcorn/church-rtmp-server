@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"io"
 	"log"
 	"os"
@@ -64,7 +63,11 @@ func DbInitialize() *DatabaseUtility {
 		db.dot = dot
 	}
 	db.seedDb()
-	initialAdminPassword := base64.RawStdEncoding.EncodeToString([]byte("initial-admin-password"))
+	initialAdminPassword := os.Getenv("ADMIN_PASSWORD")
+	if initialAdminPassword == "" {
+		log.Println("Admin password not set, generating...")
+		initialAdminPassword = generatePassword(32)
+	}
 	db.CreateNewUser("admin", initialAdminPassword, 1)
 	file, fileError := os.Create("initial-admin-password")
 	if fileError != nil {
@@ -76,6 +79,7 @@ func DbInitialize() *DatabaseUtility {
 		log.Fatalf("Cannot write to file! %s", fileError)
 	}
 	file.Sync()
+	log.Printf("Inital login is username: admin, password: %s", initialAdminPassword)
 	return db
 }
 
