@@ -154,3 +154,14 @@ func generateGUID() (s string) {
 		b[0:4], b[4:6], b[6:])
 	return uuid
 }
+
+func generatePassword(size int) (s string) {
+	b := make([]byte, size)
+	_, err := rand.Read(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	uuid := fmt.Sprintf("%x",
+		b[0:size])
+	return uuid
+}

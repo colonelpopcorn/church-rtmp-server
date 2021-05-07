@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -30,9 +31,17 @@ const userInfoKey = "userInfo"
 const identityKey = "userId"
 
 func AuthInitialize(db *DatabaseUtility) *AuthController {
+	secretKey := os.Getenv("SECRET_KEY")
+	realm := os.Getenv("AUTH_REALM")
+	if secretKey == "" {
+		secretKey = generateGUID()
+	}
+	if realm == "" {
+		realm = generateGUID()
+	}
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "test zone",
-		Key:         []byte("secret key"),
+		Realm:       realm,
+		Key:         []byte(secretKey),
 		Timeout:     time.Hour,
 		MaxRefresh:  time.Hour,
 		IdentityKey: identityKey,
