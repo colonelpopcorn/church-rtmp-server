@@ -8,66 +8,104 @@
       - url: "a.rtmp.youtube.com/live2"
         key: "some-youtube-key"
   tasks:
-    - name: "Make sure /var/www exists"
-      file: path=/var/www/{{ item }}
+    - name: Ensure directories exist
+      file: path={{ item.path }}
         state=directory
-        mode="0755"
+        mode={{ item.mode }}
         owner={{ owner }}
         group={{ owner }}
-        mode="0755"
       with_items:
-        - html
-        - live
+        - path: /var/www/html
+          mode: "0755"
+        - path: /var/www/live
+          mode: "0755"
+        - path: /etc/systemd/system
+          mode: "0755"
       tags:
         - frontend
-    - name: "Copy our web frontend over"
-      copy:
-        src: ../client/{{ item }}
-        dest: /var/www/html/{{ item }}
-        force: yes
-        owner: "{{ owner }}"
-        group: "{{ owner }}"
+    - name: Ensure directories exist - Alpine
+      file: path={{ item.path }}
+          state=directory
+          mode="{{ item.mode }}"
+          owner={{ owner }}
+          group={{ owner }}
       with_items:
-        - index.html
-        - app.js
-        - app.css
-      tags:
-        - frontend
-    - name: "Install build packages"
+        - path: /lib64
+          mode: "0755"
+      when: ansible_os_family == "Alpine"
+    - name: Install packages - Debian
       apt:
         pkg:
           - build-essential
-          - libpcre3
-          - libpcre3-dev
-          - libssl-dev
           - unzip
         update_cache: yes
         state: present
       tags:
         - backend
-    - name: "Download golang"
+      when: ansible_os_family == 'Debian'
+    - name: Install packages - Alpine
+      command: "apk add --no-cache --virtual .build-deps alpine-sdk unzip perl linux-headers"
+      when: ansible_os_family == 'Alpine'
+    - name: Download components
       get_url:
-        url: "https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz"
-        dest: "${HOME}/go1.14.4.linux-amd64.tar.gz"
-      tags:
-        - backend
-    - name: "Unzip golang archive"
-      unarchive:
-        src: "${HOME}/go1.14.4.linux-amd64.tar.gz"
-        dest: "/usr/local"
-        remote_src: yes
-      tags:
-        - backend
-    - name: Symlink Go into /usr/local/bin
-      file: src="/usr/local/go/bin/{{ item }}"
-        dest="/usr/local/bin/{{ item }}"
-        state=link
+        url: "{{ item.url }}"
+        dest: "${HOME}/{{ item.dest }}"
       with_items:
-        - go
-        - gofmt
+        - dest: nginx-1.18.0.tar.gz
+          url: https://nginx.org/download/nginx-1.18.0.tar.gz
+        - dest: nginx-rtmp-module.zip
+          url: https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip
+        - dest: zlib-1.2.11.tar.gz
+          url: http://zlib.net/zlib-1.2.11.tar.gz
+        - dest: pcre-8.44.tar.gz
+          url: https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
+        - dest: openssl-1.1.1k.tar.gz
+          url: https://www.openssl.org/source/openssl-1.1.1k.tar.gz
+        - dest: go1.14.4.linux-amd64.tar.gz
+          url: https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
       tags:
-        - backend
-    - name: Copy over go files for compilation
+        - proxy
+    - name: Unzip components
+      unarchive:
+        src: "${HOME}/{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: yes
+      with_items:
+        - src: nginx-1.18.0.tar.gz
+          dest: "${HOME}"
+        - src: nginx-rtmp-module.zip
+          dest: "${HOME}"
+        - src: zlib-1.2.11.tar.gz
+          dest: "${HOME}"
+        - src: pcre-8.44.tar.gz
+          dest: "${HOME}"
+        - src: openssl-1.1.1k.tar.gz
+          dest: "${HOME}"
+        - src: go1.14.4.linux-amd64.tar.gz
+          dest: /usr/local
+      tags:
+        - proxy
+    - name: Copy files over
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        force: yes
+        owner: "{{ owner }}"
+        group: "{{ owner }}"
+      with_items:
+        - src: ../client/index.html
+          dest: /var/www/html/index.html
+        - src: ../client/app.js
+          dest: /var/www/html/app.js
+        - src: ../client/app.css
+          dest: /var/www/html/app.css
+        - src: streaming-server.service
+          dest: /etc/systemd/system/streaming-server.service
+        - src: nginx.service
+          dest: /etc/systemd/system/nginx.service
+      tags:
+        - frontend
+    - name: Copy over go files
       copy: src="{{ item }}"
         dest="${HOME}/"
       with_fileglob:
@@ -76,64 +114,42 @@
         - "../*.sum"
       tags:
         - backend
-    - name: "Compile our server"
+    - name: Symlink Go
+      file: src="/usr/local/go/bin/{{ item }}"
+        dest="/usr/local/bin/{{ item }}"
+        state=link
+      with_items:
+        - go
+        - gofmt
+      tags:
+        - backend
+    - name: Symlink libc - Alpine
+      file: src="/lib/libc.musl-x86_64.so.1"
+        dest="/lib64/ld-linux-x86-64.so.2"
+        state=link
+      tags:
+        - backend
+      when: ansible_os_family == "Alpine"
+    - name: Compile backend
       command: "go build -o /usr/bin/streaming-server"
       args:
         chdir: "${HOME}"
       become: true
       tags:
         - backend
-    - name: "Download nginx"
-      get_url:
-        url: "https://nginx.org/download/nginx-1.18.0.tar.gz"
-        dest: "${HOME}/nginx-1.18.0.tar.gz"
-      tags:
-        - proxy
-    - name: "Download rtmp module"
-      get_url:
-        url: "https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip"
-        dest: "${HOME}/dev.zip"
-      tags:
-        - proxy
-    - name: "Download zlib"
-      get_url:
-        url: "http://zlib.net/zlib-1.2.11.tar.gz"
-        dest: "${HOME}/zlib-1.2.11.tar.gz"
-      tags:
-        - proxy
-    - name: "Unzip nginx archive"
-      unarchive:
-        src: "${HOME}/nginx-1.18.0.tar.gz"
-        dest: "${HOME}"
-        remote_src: yes
-      tags:
-        - proxy
-    - name: "Unzip rtmp module archive"
-      unarchive:
-        src: "${HOME}/dev.zip"
-        dest: "${HOME}"
-        remote_src: yes
-      tags:
-        - proxy
-    - name: "Unzip zlib module archive"
-      unarchive:
-        src: "${HOME}/zlib-1.2.11.tar.gz"
-        dest: "${HOME}"
-        remote_src: yes
-      tags:
-        - proxy
-    - name: "Configure nginx build"
-      command: ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev
+    - name: Configure nginx
+      command: |
+       ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev --with-pcre=../pcre-8.44 --with-openssl=../openssl-1.1.1k
       args:
         chdir: "${HOME}/nginx-1.18.0"
       tags:
         - proxy
-    - name: Build nginx with rtmp module
+    - name: Build nginx
       make:
         chdir: "${HOME}/nginx-1.18.0"
       tags:
         - proxy
-    - name: Install nginx with rtmp module
+    - name: Install nginx
       make:
         chdir: "${HOME}/nginx-1.18.0"
         target: install
@@ -146,16 +162,6 @@
         dest: /usr/local/nginx/conf/nginx.conf
         force: yes
       tags:
-        - proxy
-    - name: Send the systemd service for streaming-server
-      copy: src="{{ item }}"
-        dest="/etc/systemd/system/{{ item }}"
-        force=yes
-      with_items:
-        - streaming-server.service
-        - nginx.service
-      tags:
-        - backend
         - proxy
     - name: Start the streaming server
       systemd: name="{{ item }}"
