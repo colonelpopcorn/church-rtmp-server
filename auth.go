@@ -34,9 +34,11 @@ func AuthInitialize(db *DatabaseUtility) *AuthController {
 	secretKey := os.Getenv("SECRET_KEY")
 	realm := os.Getenv("AUTH_REALM")
 	if secretKey == "" {
+		log.Println("SECRET_KEY not set, generating...")
 		secretKey = generateGUID()
 	}
 	if realm == "" {
+		log.Println("AUTH_REALM not set, generating...")
 		realm = generateGUID()
 	}
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{

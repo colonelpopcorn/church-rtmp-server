@@ -65,6 +65,7 @@ func DbInitialize() *DatabaseUtility {
 	db.seedDb()
 	initialAdminPassword := os.Getenv("ADMIN_PASSWORD")
 	if initialAdminPassword == "" {
+		log.Println("Admin password not set, generating...")
 		initialAdminPassword = generatePassword(32)
 	}
 	db.CreateNewUser("admin", initialAdminPassword, 1)
