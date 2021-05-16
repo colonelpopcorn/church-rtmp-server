@@ -27,3 +27,11 @@ func generatePassword(size int) (s string) {
 		b[0:size])
 	return uuid
 }
+
+func boolToInt(boolToCheck bool) (i int) {
+	if boolToCheck {
+		return 1
+	} else {
+		return 0
+	}
+}

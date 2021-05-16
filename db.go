@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -9,6 +10,18 @@ import (
 	"github.com/gchaincl/dotsql"
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library
 )
+
+type IDatabaseUtility interface {
+	CloseDb()
+	CreateStream(guid string) (sql.Result, error)
+	CreateUser(username, password string, isAdmin int) (sql.Result, error)
+	DeleteStream(id string) (sql.Result, error)
+	GetStreams() (*sql.Rows, error)
+	GetUser(userId int64) (User, error)
+	GetUsers() ([]User, error)
+	Login(username, password string) (*sql.Rows, error)
+	ToggleStream(status int, streamKey string) (sql.Result, error)
+}
 
 type DatabaseUtility struct {
 	dot       *dotsql.DotSql
@@ -49,10 +62,16 @@ INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?);
 
 --name: validate-user
 SELECT id, is_admin, password FROM users WHERE username = ? LIMIT 1;
+
+--name: get-user-by-id
+SELECT id, is_admin, username FROM users WHERE id = ? LIMIT 1;
+
+--name: get-users
+SELECT id, is_admin, username FROM users ORDER BY is_admin DESC, id;
 `
 
-func DbInitialize() *DatabaseUtility {
-	db := new(DatabaseUtility)
+func DbInitialize() IDatabaseUtility {
+	db := DatabaseUtility{}
 	db.createDb()
 	sqlContext, openError := sql.Open("sqlite3", dbName)
 	if openError == nil {
@@ -68,7 +87,7 @@ func DbInitialize() *DatabaseUtility {
 		log.Println("Admin password not set, generating...")
 		initialAdminPassword = generatePassword(32)
 	}
-	db.CreateNewUser("admin", initialAdminPassword, 1)
+	db.CreateUser("admin", initialAdminPassword, 1)
 	file, fileError := os.Create("initial-admin-password")
 	if fileError != nil {
 		log.Fatalf("Cannot open file! %s", fileError)
@@ -83,11 +102,11 @@ func DbInitialize() *DatabaseUtility {
 	return db
 }
 
-func (db *DatabaseUtility) CloseDb() {
+func (db DatabaseUtility) CloseDb() {
 	db.dbContext.Close()
 }
 
-func (db *DatabaseUtility) createDb() {
+func (db DatabaseUtility) createDb() {
 	if _, err := os.Stat(dbName); os.IsNotExist(err) {
 		// path/to/whatever does not exist
 		log.Printf("Creating %s...", dbName)
@@ -100,7 +119,7 @@ func (db *DatabaseUtility) createDb() {
 	log.Printf("%s created", dbName)
 }
 
-func (db *DatabaseUtility) seedDb() {
+func (db DatabaseUtility) seedDb() {
 	_, streamKeyTableErr := db.dot.Exec(db.dbContext, "create-stream-key-table")
 	if streamKeyTableErr != nil {
 		panic(streamKeyTableErr)
@@ -111,27 +130,60 @@ func (db *DatabaseUtility) seedDb() {
 	}
 }
 
-func (db *DatabaseUtility) ToggleStream(status int, streamKey string) (sql.Result, error) {
+func (db DatabaseUtility) ToggleStream(status int, streamKey string) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "toggle-stream", status, streamKey)
 }
 
-func (db *DatabaseUtility) GetStreams() (*sql.Rows, error) {
+func (db DatabaseUtility) GetStreams() (*sql.Rows, error) {
 	return db.dot.Query(db.dbContext, "get-streams")
 }
 
-func (db *DatabaseUtility) CreateNewStream(guid string) (sql.Result, error) {
+func (db DatabaseUtility) CreateStream(guid string) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "create-new-stream", guid)
 }
 
-func (db *DatabaseUtility) DeleteStream(id string) (sql.Result, error) {
+func (db DatabaseUtility) DeleteStream(id string) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "delete-stream", id)
 }
 
-func (db *DatabaseUtility) Login(username, password string) (*sql.Rows, error) {
+func (db DatabaseUtility) Login(username, password string) (*sql.Rows, error) {
 	return db.dot.Query(db.dbContext, "validate-user", username, password)
 }
 
-func (db *DatabaseUtility) CreateNewUser(username, password string, isAdmin int) (sql.Result, error) {
+func (db DatabaseUtility) CreateUser(username, password string, isAdmin int) (sql.Result, error) {
 	hashedPwd, _ := HashPassword(password)
 	return db.dot.Exec(db.dbContext, "create-new-user", username, hashedPwd, isAdmin)
+}
+
+func (db DatabaseUtility) GetUser(userId int64) (User, error) {
+	var user User
+	rows, err := db.dot.Query(db.dbContext, "get-user-by-id")
+	if err != nil {
+		return user, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&user.UserId, &user.IsAdmin, &user.Username)
+		if err != nil {
+			return user, nil
+		}
+	}
+	return user, errors.New("failed to find user for this ID")
+}
+
+func (db DatabaseUtility) GetUsers() ([]User, error) {
+	users := []User{}
+	rows, err := db.dot.Query(db.dbContext, "get-users")
+	if err != nil {
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.UserId, &user.IsAdmin, &user.Username)
+		if err != nil {
+			users = append(users, user)
+		}
+	}
+	return users, nil
 }

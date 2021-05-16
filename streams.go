@@ -16,7 +16,7 @@ type Stream struct {
 }
 
 type StreamController struct {
-	DB *DatabaseUtility
+	DB IDatabaseUtility
 }
 
 func (sc *StreamController) VerifyStream(c *gin.Context) {
@@ -81,7 +81,7 @@ func (sc *StreamController) GetStreams(c *gin.Context) {
 
 func (sc *StreamController) CreateKey(c *gin.Context) {
 	guid := generateGUID()
-	_, err := sc.DB.CreateNewStream(guid)
+	_, err := sc.DB.CreateStream(guid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			SUCCESS_KEY:          false,

@@ -13,13 +13,15 @@ import (
 )
 
 type AuthController struct {
-	database       *DatabaseUtility
+	database       IDatabaseUtility
 	AuthMiddleware *jwt.GinJWTMiddleware
 }
 
 type User struct {
+	UserId   int64  `form:"userId" json:"userId"`
 	Username string `form:"username" json:"username" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
+	IsAdmin  bool   `form:"isAdmin" json:"isAdmin"`
 }
 
 type AuthorizedUser struct {
@@ -30,7 +32,7 @@ type AuthorizedUser struct {
 const userInfoKey = "userInfo"
 const identityKey = "userId"
 
-func AuthInitialize(db *DatabaseUtility) *AuthController {
+func AuthInitialize(db IDatabaseUtility) *AuthController {
 	secretKey := os.Getenv("SECRET_KEY")
 	realm := os.Getenv("AUTH_REALM")
 	if secretKey == "" {
