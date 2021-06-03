@@ -21,6 +21,8 @@ type IDatabaseUtility interface {
 	GetUsers() ([]User, error)
 	Login(username, password string) (*sql.Rows, error)
 	ToggleStream(status int, streamKey string) (sql.Result, error)
+	ToggleAdmin(userId int64, isAdmin int) (sql.Result, error)
+	UpdateUserPassword(userId int64, password string) (sql.Result, error)
 }
 
 type DatabaseUtility struct {
@@ -68,6 +70,12 @@ SELECT id, is_admin, username FROM users WHERE id = ? LIMIT 1;
 
 --name: get-users
 SELECT id, is_admin, username FROM users ORDER BY is_admin DESC, id;
+
+--name: update-password
+UPDATE users SET password = ? WHERE id = ?;
+
+--name: toggle-admin
+UPDATE users SET is_admin = ? WHERE id = ?;
 `
 
 func DbInitialize() IDatabaseUtility {
@@ -186,4 +194,12 @@ func (db DatabaseUtility) GetUsers() ([]User, error) {
 		}
 	}
 	return users, nil
+}
+
+func (db DatabaseUtility) ToggleAdmin(userId int64, isAdmin int) (sql.Result, error) {
+	return db.dot.Exec(db.dbContext, "toggle-admin", isAdmin, userId)
+}
+
+func (db DatabaseUtility) UpdateUserPassword(userId int64, newPassword string) (sql.Result, error) {
+	return db.dot.Exec(db.dbContext, "update-password", newPassword, userId)
 }
