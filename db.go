@@ -11,20 +11,6 @@ import (
 	_ "github.com/mattn/go-sqlite3" // Import go-sqlite3 library
 )
 
-type IDatabaseUtility interface {
-	CloseDb()
-	CreateStream(guid string) (sql.Result, error)
-	CreateUser(username, password string, isAdmin int) (sql.Result, error)
-	DeleteStream(id string) (sql.Result, error)
-	GetStreams() (*sql.Rows, error)
-	GetUser(userId int64) (User, error)
-	GetUsers() ([]User, error)
-	Login(username, password string) (*sql.Rows, error)
-	ToggleStream(status int, streamKey string) (sql.Result, error)
-	ToggleAdmin(userId int64, isAdmin int) (sql.Result, error)
-	UpdateUserPassword(userId int64, password string) (sql.Result, error)
-}
-
 type DatabaseUtility struct {
 	dot       *dotsql.DotSql
 	dbContext *sql.DB
@@ -76,9 +62,12 @@ UPDATE users SET password = ? WHERE id = ?;
 
 --name: toggle-admin
 UPDATE users SET is_admin = ? WHERE id = ?;
+
+--name: delete-user
+DELETE FROM users WHERE id = ?;
 `
 
-func DbInitialize() IDatabaseUtility {
+func DbInitialize() DatabaseUtility {
 	db := DatabaseUtility{}
 	db.createDb()
 	sqlContext, openError := sql.Open("sqlite3", dbName)
@@ -200,6 +189,26 @@ func (db DatabaseUtility) ToggleAdmin(userId int64, isAdmin int) (sql.Result, er
 	return db.dot.Exec(db.dbContext, "toggle-admin", isAdmin, userId)
 }
 
-func (db DatabaseUtility) UpdateUserPassword(userId int64, newPassword string) (sql.Result, error) {
+func (db DatabaseUtility) UpdateUserPassword(userId int64, oldPassword, newPassword string) (sql.Result, error) {
+	rows, err := db.dbContext.Query("SELECT password from users WHERE id = ? LIMIT 1;", userId)
+	var passwordHash string
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		errOne := rows.Scan(&passwordHash)
+		if errOne != nil {
+			return nil, err
+		}
+	}
+	shouldUpdate := CheckPasswordHash(oldPassword, passwordHash)
+	if !shouldUpdate {
+		return nil, errors.New("invalid password for this user, cannot change")
+	}
 	return db.dot.Exec(db.dbContext, "update-password", newPassword, userId)
+}
+
+func (db DatabaseUtility) DeleteUser(userId int64) (sql.Result, error) {
+	return db.dot.Exec(db.dbContext, "delete-user", userId)
 }

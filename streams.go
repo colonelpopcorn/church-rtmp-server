@@ -16,7 +16,7 @@ type Stream struct {
 }
 
 type StreamController struct {
-	DB IDatabaseUtility
+	DB DatabaseUtility
 }
 
 func (sc *StreamController) VerifyStream(c *gin.Context) {
@@ -52,8 +52,6 @@ func (sc *StreamController) VerifyStream(c *gin.Context) {
 func (sc *StreamController) GetStreams(c *gin.Context) {
 	streams := make([]Stream, 0)
 	rows, err := sc.DB.GetStreams()
-	defer rows.Close()
-
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -63,6 +61,8 @@ func (sc *StreamController) GetStreams(c *gin.Context) {
 		}
 		return
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var (
 			id, isValid int
@@ -111,7 +111,7 @@ func (sc *StreamController) DeleteStream(c *gin.Context) {
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{
-		SUCCESS_KEY:          false,
+		SUCCESS_KEY:          true,
 		RESPONSE_MESSAGE_KEY: "Deleted stream!",
 	})
 }
