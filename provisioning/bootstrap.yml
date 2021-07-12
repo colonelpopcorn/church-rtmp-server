@@ -114,15 +114,6 @@
         - "../*.sum"
       tags:
         - backend
-    - name: Symlink Go
-      file: src="/usr/local/go/bin/{{ item }}"
-        dest="/usr/local/bin/{{ item }}"
-        state=link
-      with_items:
-        - go
-        - gofmt
-      tags:
-        - backend
     - name: Symlink libc - Alpine
       file: src="/lib/libc.musl-x86_64.so.1"
         dest="/lib64/ld-linux-x86-64.so.2"
@@ -131,7 +122,7 @@
         - backend
       when: ansible_os_family == "Alpine"
     - name: Compile backend
-      command: "go build -o /usr/bin/streaming-server"
+      command: "/usr/local/go/bin/go build -o /usr/bin/streaming-server"
       args:
         chdir: "${HOME}"
       become: true
