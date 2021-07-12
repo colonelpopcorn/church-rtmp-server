@@ -19,8 +19,6 @@
           mode: "0755"
         - path: /var/www/live
           mode: "0755"
-        - path: /etc/systemd/system
-          mode: "0755"
       tags:
         - frontend
     - name: Ensure directories exist - Alpine
@@ -63,6 +61,8 @@
           url: https://www.openssl.org/source/openssl-1.1.1k.tar.gz
         - dest: go1.14.4.linux-amd64.tar.gz
           url: https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
+        - dest: supervisord_0.7.3_Linux_64-bit.tar.gz
+          url: https://github.com/ochinchina/supervisord/releases/download/v0.7.3/supervisord_0.7.3_Linux_64-bit.tar.gz
       tags:
         - proxy
     - name: Unzip components
@@ -83,6 +83,8 @@
           dest: "${HOME}"
         - src: go1.14.4.linux-amd64.tar.gz
           dest: /usr/local
+        - src: supervisord_0.7.3_Linux_64-bit.tar.gz
+          dest: /usr/local/bin
       tags:
         - proxy
     - name: Copy files over
@@ -99,10 +101,10 @@
           dest: /var/www/html/app.js
         - src: ../client/app.css
           dest: /var/www/html/app.css
-        - src: streaming-server.service
-          dest: /etc/systemd/system/streaming-server.service
-        - src: nginx.service
-          dest: /etc/systemd/system/nginx.service
+        - src: ../client/app.css
+          dest: /var/www/html/app.css
+        - src: ./supervisor.conf
+          dest: /etc/supervisor.conf
       tags:
         - frontend
     - name: Copy over go files
@@ -154,14 +156,10 @@
         force: yes
       tags:
         - proxy
-    - name: Start the streaming server
-      systemd: name="{{ item }}"
-        enabled=yes
-        state=restarted
-        force=yes
-      with_items:
-        - streaming-server
-        - nginx
+    - name: Rename supervisord folder
+      command: mv /usr/local/bin//supervisord_0.7.3_Linux_64-bit /usr/local/bin/supervisord
+    - name: Start server
+      command: "/usr/local/bin/supervisord/supervisord_static -c /etc/supervisor.conf -d"
+      become: true
       tags:
-        - proxy
-        - backend
+        - supervisor

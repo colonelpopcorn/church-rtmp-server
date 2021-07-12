@@ -10,7 +10,6 @@ Vagrant.configure("2") do |config|
     ansible.playbook = "provisioning/bootstrap.yml"
     ansible.extra_vars = {
       owner: "vagrant"
-      is_vm: true
     }
     # Change and uncomment to work only on certain parts.
     # ansible.raw_arguments = ["--tags", "frontend"]
