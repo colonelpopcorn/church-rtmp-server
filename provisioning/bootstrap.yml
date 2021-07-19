@@ -130,6 +130,7 @@
       become: true
       tags:
         - backend
+      notify: Remove golang
     - name: Configure nginx
       command: |
        ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev --with-pcre=../pcre-8.44 --with-openssl=../openssl-1.1.1k
@@ -163,3 +164,14 @@
       become: true
       tags:
         - supervisor
+  handlers:
+    name: Remove golang
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+      - /usr/local/bin/go
+      - /usr/local/bin/gofmt
+      - "/usr/local/go
+
+
