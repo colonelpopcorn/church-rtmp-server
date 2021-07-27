@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -16,7 +17,6 @@ type DatabaseUtility struct {
 	dbContext *sql.DB
 }
 
-const dbName = "sqlite-database.db"
 const queries = `
 -- name: create-stream-key-table
 CREATE TABLE IF NOT EXISTS stream_keys (
@@ -55,7 +55,7 @@ SELECT id, is_admin, password FROM users WHERE username = ? LIMIT 1;
 func DbInitialize() *DatabaseUtility {
 	db := new(DatabaseUtility)
 	db.createDb()
-	sqlContext, openError := sql.Open("sqlite3", dbName)
+	sqlContext, openError := sql.Open("sqlite3", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
 	if openError == nil {
 		db.dbContext = sqlContext
 	}
@@ -84,16 +84,16 @@ func (db *DatabaseUtility) CloseDb() {
 }
 
 func (db *DatabaseUtility) createDb() {
-	if _, err := os.Stat(dbName); os.IsNotExist(err) {
+	if _, err := os.Stat(fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE)); os.IsNotExist(err) {
 		// path/to/whatever does not exist
-		log.Printf("Creating %s...", dbName)
-		file, err := os.Create(dbName) // Create SQLite file
+		log.Printf("Creating %s...", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
+		file, err := os.Create(fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE)) // Create SQLite file
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 		file.Close()
 	}
-	log.Printf("%s created", dbName)
+	log.Printf("%s created", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
 }
 
 func (db *DatabaseUtility) seedDb() {
