@@ -1,15 +1,14 @@
-FROM ubuntu:20.04
+FROM alpine:3.14
 
-RUN apt update && apt install ansible -y
 COPY / /tmp/project
-
-RUN wget -O /usr/bin/systemctl https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py
-RUN chmod +x /usr/bin/systemctl
-
 WORKDIR /tmp/project/provisioning
-RUN ansible-playbook --become --connection=local -i 127.0.0.1, bootstrap.yml
+RUN \
+    apk add --no-cache --virtual .ansible ansible \
+    && ansible-playbook --become --connection=local -i 127.0.0.1, bootstrap.yml \
+    && apk del .ansible \
+    && rm -rf /tmp/project/* 
 
-EXPOSE 80 443 1935
+EXPOSE 80 443 1935 9001
 
-ENTRYPOINT [ "/usr/bin/systemctl", "start" ]
-CMD [ "nginx", "streaming-server" ]
+ENTRYPOINT [ "/usr/local/bin/supervisord/supervisord_static", "-c"]
+CMD [ "/etc/supervisor.conf" ]
