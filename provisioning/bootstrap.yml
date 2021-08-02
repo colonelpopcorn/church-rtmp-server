@@ -163,6 +163,7 @@
     - name: Start server
       command: "/usr/local/bin/supervisord/supervisord_static -c /etc/supervisor.conf -d"
       become: true
+      when: is_vm is true
       tags:
         - supervisor
     - name: Cleanup extra stuff
@@ -189,11 +190,7 @@
       with_items:
         - path: /root/
           state: absent
-        - path: /tmp/project/
-          state: absent
         - path: /root/
-          state: directory
-        - path: /tmp/
           state: directory
     
 

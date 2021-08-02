@@ -9,19 +9,20 @@ const SUCCESS_KEY = "success"
 const RESPONSE_MESSAGE_KEY = "responseMessage"
 const SQLITE_DATABASE = "sqlite-database.db"
 
-func GetStreamingServerPath() string {
+func GetHomeFolder() string {
 	osName := runtime.GOOS
+	optionalPath, ok := os.LookupEnv("STREAMING_SERVER_PATH")
+
+	if ok {
+		return optionalPath
+	}
 
 	switch osName {
 	case `windows`:
-		return `C:\ProgramData\StreamingServer`
+		return `C:\ProgramData\StreamingServer\`
 	case `darwin`:
-		return `/Library/Applications/StreamingServer`
+		return `/Library/Applications/StreamingServer/`
 	default:
-		optionalPath, ok := os.LookupEnv("STREAMING_SERVER_PATH")
-		if ok {
-			return optionalPath
-		}
-		return `/etc/streaming-server`
+		return `/etc/streaming-server/`
 	}
 }

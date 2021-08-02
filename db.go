@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/base64"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -52,10 +51,11 @@ INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?);
 SELECT id, is_admin, password FROM users WHERE username = ? LIMIT 1;
 `
 
-func DbInitialize() *DatabaseUtility {
+func DbInitialize(homeFolder string) *DatabaseUtility {
+	sqlDBPath := homeFolder + SQLITE_DATABASE
 	db := new(DatabaseUtility)
-	db.createDb()
-	sqlContext, openError := sql.Open("sqlite3", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
+	db.createDb(sqlDBPath)
+	sqlContext, openError := sql.Open("sqlite3", sqlDBPath)
 	if openError == nil {
 		db.dbContext = sqlContext
 	}
@@ -66,7 +66,7 @@ func DbInitialize() *DatabaseUtility {
 	db.seedDb()
 	initialAdminPassword := base64.RawStdEncoding.EncodeToString([]byte("initial-admin-password"))
 	db.CreateNewUser("admin", initialAdminPassword, 1)
-	file, fileError := os.Create("initial-admin-password")
+	file, fileError := os.Create(homeFolder + "initial-admin-password")
 	if fileError != nil {
 		log.Fatalf("Cannot open file! %s", fileError)
 	}
@@ -83,17 +83,17 @@ func (db *DatabaseUtility) CloseDb() {
 	db.dbContext.Close()
 }
 
-func (db *DatabaseUtility) createDb() {
-	if _, err := os.Stat(fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE)); os.IsNotExist(err) {
+func (db *DatabaseUtility) createDb(sqlDBPath string) {
+	if _, err := os.Stat(sqlDBPath); os.IsNotExist(err) {
 		// path/to/whatever does not exist
-		log.Printf("Creating %s...", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
-		file, err := os.Create(fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE)) // Create SQLite file
+		log.Printf("Creating %s...", sqlDBPath)
+		file, err := os.Create(sqlDBPath) // Create SQLite file
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 		file.Close()
 	}
-	log.Printf("%s created", fmt.Sprintf(GetStreamingServerPath(), string(os.PathSeparator), SQLITE_DATABASE))
+	log.Printf("%s created", sqlDBPath)
 }
 
 func (db *DatabaseUtility) seedDb() {

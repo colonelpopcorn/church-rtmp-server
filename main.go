@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,9 @@ type SessionToken struct {
 }
 
 func main() {
-	DB := DbInitialize()
+	homeFolder := GetHomeFolder()
+	InitHomeFolder(homeFolder)
+	DB := DbInitialize(homeFolder)
 	defer DB.CloseDb()
 	streamController := StreamController{DB}
 	confController := ConfigController{}
@@ -46,4 +49,8 @@ func main() {
 		nginxGroup.POST("/config", confController.UpdateConfiguration)
 	}
 	app.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+}
+
+func InitHomeFolder(homeFolder string) {
+	os.MkdirAll(homeFolder, 0644)
 }
