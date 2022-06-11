@@ -49,15 +49,16 @@
       get_url:
         url: "{{ item.url }}"
         dest: "${HOME}/{{ item.dest }}"
+        timeout: 300
       with_items:
         - dest: nginx-1.18.0.tar.gz
           url: https://nginx.org/download/nginx-1.18.0.tar.gz
         - dest: nginx-rtmp-module.zip
           url: https://github.com/sergey-dryabzhinsky/nginx-rtmp-module/archive/dev.zip
-        - dest: zlib-1.2.11.tar.gz
-          url: http://zlib.net/zlib-1.2.11.tar.gz
-        - dest: pcre-8.44.tar.gz
-          url: https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
+        - dest: zlib-1.2.12.tar.gz
+          url: http://zlib.net/zlib-1.2.12.tar.gz
+        - dest: pcre-8.45.tar.bz2
+          url: https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2
         - dest: openssl-1.1.1k.tar.gz
           url: https://www.openssl.org/source/openssl-1.1.1k.tar.gz
         - dest: go1.14.4.linux-amd64.tar.gz
@@ -76,9 +77,9 @@
           dest: "${HOME}"
         - src: nginx-rtmp-module.zip
           dest: "${HOME}"
-        - src: zlib-1.2.11.tar.gz
+        - src: zlib-1.2.12.tar.gz
           dest: "${HOME}"
-        - src: pcre-8.44.tar.gz
+        - src: pcre-8.45.tar.bz2
           dest: "${HOME}"
         - src: openssl-1.1.1k.tar.gz
           dest: "${HOME}"
@@ -133,7 +134,7 @@
         - backend
     - name: Configure nginx
       command: |
-       ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.11 --add-module=../nginx-rtmp-module-dev --with-pcre=../pcre-8.44 --with-openssl=../openssl-1.1.1k
+       ./configure --with-http_ssl_module --with-zlib=../zlib-1.2.12 --add-module=../nginx-rtmp-module-dev --with-pcre=../pcre-8.45 --with-openssl=../openssl-1.1.1k
       args:
         chdir: "${HOME}/nginx-1.18.0"
       tags:
