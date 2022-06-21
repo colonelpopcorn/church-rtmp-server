@@ -16,7 +16,7 @@ type Stream struct {
 }
 
 type StreamController struct {
-	DB DatabaseUtility
+	DB *DatabaseUtility
 }
 
 func (sc *StreamController) VerifyStream(c *gin.Context) {

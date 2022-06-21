@@ -212,3 +212,9 @@ func (db DatabaseUtility) UpdateUserPassword(userId int64, oldPassword, newPassw
 func (db DatabaseUtility) DeleteUser(userId int64) (sql.Result, error) {
 	return db.dot.Exec(db.dbContext, "delete-user", userId)
 }
+
+func (db *DatabaseUtility) CreateNewUser(username, password string, isAdmin int) (sql.Result, error) {
+	hashedPwd, _ := HashPassword(password)
+	return db.dot.Exec(db.dbContext, "create-new-user", username, hashedPwd, isAdmin)
+}
+

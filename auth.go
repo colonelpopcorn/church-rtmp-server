@@ -13,7 +13,7 @@ import (
 )
 
 type AuthController struct {
-	database       DatabaseUtility
+	database       *DatabaseUtility
 	AuthMiddleware *jwt.GinJWTMiddleware
 }
 
@@ -32,7 +32,7 @@ type AuthorizedUser struct {
 const userInfoKey = "userInfo"
 const identityKey = "userId"
 
-func AuthInitialize(db DatabaseUtility) *AuthController {
+func AuthInitialize(db *DatabaseUtility) *AuthController {
 	secretKey := os.Getenv("SECRET_KEY")
 	realm := os.Getenv("AUTH_REALM")
 	if secretKey == "" {

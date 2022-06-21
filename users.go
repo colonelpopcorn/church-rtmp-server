@@ -10,7 +10,7 @@ import (
 )
 
 type UsersController struct {
-	db DatabaseUtility
+	db *DatabaseUtility
 }
 
 type CreateUserRequest struct {
