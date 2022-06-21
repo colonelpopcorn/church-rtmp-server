@@ -16,7 +16,6 @@ type DatabaseUtility struct {
 	dbContext *sql.DB
 }
 
-const dbName = "sqlite-database.db"
 const queries = `
 -- name: create-stream-key-table
 CREATE TABLE IF NOT EXISTS stream_keys (
@@ -67,10 +66,18 @@ UPDATE users SET is_admin = ? WHERE id = ?;
 DELETE FROM users WHERE id = ?;
 `
 
+<<<<<<< HEAD
 func DbInitialize() DatabaseUtility {
 	db := DatabaseUtility{}
 	db.createDb()
 	sqlContext, openError := sql.Open("sqlite3", dbName)
+=======
+func DbInitialize(homeFolder string) *DatabaseUtility {
+	sqlDBPath := homeFolder + SQLITE_DATABASE
+	db := new(DatabaseUtility)
+	db.createDb(sqlDBPath)
+	sqlContext, openError := sql.Open("sqlite3", sqlDBPath)
+>>>>>>> master
 	if openError == nil {
 		db.dbContext = sqlContext
 	}
@@ -84,8 +91,13 @@ func DbInitialize() DatabaseUtility {
 		log.Println("Admin password not set, generating...")
 		initialAdminPassword = generatePassword(32)
 	}
+<<<<<<< HEAD
 	db.CreateUser("admin", initialAdminPassword, 1)
 	file, fileError := os.Create("initial-admin-password")
+=======
+	db.CreateNewUser("admin", initialAdminPassword, 1)
+	file, fileError := os.Create(homeFolder + "initial-admin-password")
+>>>>>>> master
 	if fileError != nil {
 		log.Fatalf("Cannot open file! %s", fileError)
 	}
@@ -103,17 +115,22 @@ func (db DatabaseUtility) CloseDb() {
 	db.dbContext.Close()
 }
 
+<<<<<<< HEAD
 func (db DatabaseUtility) createDb() {
 	if _, err := os.Stat(dbName); os.IsNotExist(err) {
+=======
+func (db *DatabaseUtility) createDb(sqlDBPath string) {
+	if _, err := os.Stat(sqlDBPath); os.IsNotExist(err) {
+>>>>>>> master
 		// path/to/whatever does not exist
-		log.Printf("Creating %s...", dbName)
-		file, err := os.Create(dbName) // Create SQLite file
+		log.Printf("Creating %s...", sqlDBPath)
+		file, err := os.Create(sqlDBPath) // Create SQLite file
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 		file.Close()
 	}
-	log.Printf("%s created", dbName)
+	log.Printf("%s created", sqlDBPath)
 }
 
 func (db DatabaseUtility) seedDb() {
